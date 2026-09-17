@@ -120,7 +120,7 @@ poetry run pytest
 
 - [x] Étape 1 — Environnement de développement
 - [x] Étape 2 — Pré-processing des données Open Agenda
-- [ ] Étape 3 — Base vectorielle FAISS
+- [x] Étape 3 — Base vectorielle FAISS
 - [ ] Étape 4 — Intégration LangChain / RAG
 - [ ] Étape 5 — API REST
 - [ ] Étape 6 — Conteneurisation et démo
