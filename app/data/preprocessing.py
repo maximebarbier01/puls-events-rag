@@ -1,4 +1,8 @@
-"""Clean, filter and structure raw Open Agenda events ahead of chunking/indexing."""
+"""
+Nettoyer, filtrer et structurer les événements bruts d'Open Agenda
+avant leur découpage en blocs et leur indexation.
+"""
+
 from __future__ import annotations
 
 import json
@@ -62,7 +66,9 @@ def filter_recent_events(
 ) -> pd.DataFrame:
     """Keep events with up to `days` of history, and all upcoming events (no cap)."""
     cutoff = pd.Timestamp(reference_date - timedelta(days=days))
-    cutoff = cutoff.tz_localize("UTC") if cutoff.tzinfo is None else cutoff.tz_convert("UTC")
+    cutoff = (
+        cutoff.tz_localize("UTC") if cutoff.tzinfo is None else cutoff.tz_convert("UTC")
+    )
     lastdate_end = pd.to_datetime(df["lastdate_end"], utc=True)
     return df[lastdate_end >= cutoff].copy()
 
@@ -114,11 +120,15 @@ def build_content_text(row: pd.Series) -> str:
     if _has_value(dates):
         parts.append(f"Dates : {_as_text(dates)}")
 
-    location = ", ".join(b for b in (row.get("location_name"), row.get("location_city")) if b)
+    location = ", ".join(
+        b for b in (row.get("location_name"), row.get("location_city")) if b
+    )
     if location:
         parts.append(f"Lieu : {location}")
 
-    description = clean_html(row.get("longdescription_fr")) or (row.get("description_fr") or "")
+    description = clean_html(row.get("longdescription_fr")) or (
+        row.get("description_fr") or ""
+    )
     if description:
         parts.append(description)
 

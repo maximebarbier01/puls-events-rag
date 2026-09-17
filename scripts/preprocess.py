@@ -3,8 +3,9 @@ from pathlib import Path
 
 from app.data.preprocessing import preprocess
 
-RAW_PATH = Path("data/raw/evenements-publics-openagenda.parquet")
-OUTPUT_PATH = Path("data/processed/events_clean.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+RAW_PATH = PROJECT_ROOT / "data/raw/evenements-publics-openagenda.parquet"
+OUTPUT_PATH = PROJECT_ROOT / "data/processed/events_clean.parquet"
 
 
 def main() -> None:
