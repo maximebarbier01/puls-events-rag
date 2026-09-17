@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "puls-events-rag"
+version = "0.1.0"
+description = "POC d'assistant RAG (LangChain + Mistral + FAISS) pour recommander des événements culturels à partir des données Open Agenda."
+authors = ["Maxime <maximebarbier57@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+fastapi = "^0.136.1"
+uvicorn = "^0.46.0"
+langchain = "^0.3.0"
+langchain-community = "^0.3.0"
+langchain-huggingface = "^0.1.0"
+langchain-mistralai = "^0.2.0"
+mistralai = "^1.2.0"
+faiss-cpu = "^1.9.0"
+sentence-transformers = "^3.3.0"
+pandas = "^2.2.0"
+requests = "^2.32.0"
+python-dotenv = "^1.2.2"
+pydantic = "^2.13.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.3"
+pytest-cov = "^7.1.0"
+httpx = "^0.28.1"
+black = "^26.3.1"
+ruff = "^0.15.12"
+
+[tool.poetry.group.eval.dependencies]
+ragas = "^0.2.0"
+datasets = "^3.0.0"
+
+[tool.poetry.group.notebook.dependencies]
+ipykernel = "^7.2.0"
+jupyter = "^1.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.fastapi]
+entrypoint = "app.main:app"
