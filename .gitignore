@@ -15,8 +15,8 @@ coverage.xml
 # Données et index (regénérables via scripts/)
 data/raw/*
 !data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
 data/external/
 index/
 *.faiss

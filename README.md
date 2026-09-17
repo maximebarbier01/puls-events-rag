@@ -41,8 +41,8 @@ Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
 - **Statut** : les événements annulés sont exclus ; les événements complets sont gardés
   mais signalés (`is_full`).
 - Résultat : ~1439 événements culturels propres dans
-  `data/processed/events_clean.parquet` (à partir de 2829 lignes brutes récupérées via
-  `scripts/fetch_openagenda.py`).
+  `data/interim/events_clean.parquet` (à partir de 2829 lignes brutes récupérées via
+  `scripts/00-fetch_openagenda.py`).
 
 ## Structure du projet
 
@@ -54,11 +54,12 @@ puls-events-rag/
 │   ├── data/             # récupération + nettoyage Open Agenda
 │   ├── vectorstore/      # construction / chargement de l'index FAISS
 │   └── rag/              # chaîne LangChain (retrieval + génération)
-├── scripts/              # scripts exécutables (ex: build_index.py, evaluate_rag.py)
+├── scripts/              # scripts exécutables numérotés (00-fetch, 01-preprocess, 02-build_index...)
 ├── tests/                # tests unitaires et fonctionnels
 ├── data/
 │   ├── raw/               # données brutes Open Agenda (non versionné)
-│   └── processed/         # données nettoyées prêtes à l'indexation (non versionné)
+│   └── interim/           # données nettoyées prêtes à l'indexation (non versionné)
+├── index/                 # index vectoriel FAISS régénérable (non versionné)
 ├── eval/                 # jeu de questions/réponses annoté
 ├── docs/                 # rapport technique, présentation
 ├── pyproject.toml / poetry.lock   # dépendances (source de vérité)

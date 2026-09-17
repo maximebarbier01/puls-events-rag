@@ -1,4 +1,5 @@
-"""Build the FAISS vector index from data/processed/events_clean.parquet."""
+"""Créez l'index vectoriel FAISS à partir du fichier data/interim/events_clean.parquet."""
+
 from pathlib import Path
 
 from app.vectorstore.build import (
@@ -11,7 +12,7 @@ from app.vectorstore.build import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PROCESSED_PATH = PROJECT_ROOT / "data/processed/events_clean.parquet"
+PROCESSED_PATH = PROJECT_ROOT / "data/interim/events_clean.parquet"
 INDEX_PATH = PROJECT_ROOT / "index/events_faiss"
 
 

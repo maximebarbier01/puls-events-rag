@@ -1,4 +1,5 @@
-"""Chunk, embed and index the cleaned events into a local FAISS vector store."""
+"""Regrouper, intégrer et indexer les événements nettoyés dans un FAISS vector store local."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -54,9 +55,13 @@ def to_documents(df: pd.DataFrame) -> list[Document]:
 
 
 def chunk_documents(
-    documents: list[Document], chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP
+    documents: list[Document],
+    chunk_size: int = CHUNK_SIZE,
+    chunk_overlap: int = CHUNK_OVERLAP,
 ) -> list[Document]:
-    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
     return splitter.split_documents(documents)
 
 
@@ -74,6 +79,7 @@ def save_index(vectorstore: FAISS, path: Path) -> None:
 
 
 def load_index(path: Path, embeddings: Embeddings) -> FAISS:
-    # The index is generated locally by our own scripts (scripts/build_index.py), never
-    # loaded from an untrusted external source, so unpickling the docstore is safe here.
+    # L'index est généré localement par nos propres scripts (scripts/build_index.py) ;
+    # il n'est jamais chargé à partir d'une source externe non fiable.
+    # Le dé-pickling du docstore ne présente donc aucun risque dans ce cas.
     return FAISS.load_local(str(path), embeddings, allow_dangerous_deserialization=True)
