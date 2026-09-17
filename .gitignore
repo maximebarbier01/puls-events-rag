@@ -17,6 +17,7 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+data/external/
 index/
 *.faiss
 *.pkl
