@@ -1,4 +1,8 @@
-"""Fetch public events from the Open Agenda dataset via the OpenDataSoft Explore API."""
+"""
+Récupérer les événements publics issus du jeu de données Open Agenda
+via l'API Explore d'OpenDataSoft.
+"""
+
 from __future__ import annotations
 
 import time
@@ -21,8 +25,12 @@ def _flatten_coordinates(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
     coords = df.pop("location_coordinates")
-    df["location_lat"] = coords.apply(lambda c: c.get("lat") if isinstance(c, dict) else None)
-    df["location_lon"] = coords.apply(lambda c: c.get("lon") if isinstance(c, dict) else None)
+    df["location_lat"] = coords.apply(
+        lambda c: c.get("lat") if isinstance(c, dict) else None
+    )
+    df["location_lon"] = coords.apply(
+        lambda c: c.get("lon") if isinstance(c, dict) else None
+    )
     return df
 
 
@@ -31,7 +39,7 @@ def fetch_events(
     min_last_date: str | None = None,
     page_size: int = PAGE_SIZE,
 ) -> pd.DataFrame:
-    """Paginate through the Explore API for a department, optionally bounded by date."""
+    """Parcourt l'API Explore pour un service, en limitant éventuellement la recherche par date."""
     where = f'location_department="{department}"'
     if min_last_date:
         where += f" AND lastdate_end >= date'{min_last_date}'"
