@@ -21,6 +21,7 @@ pandas = "^2.2.0"
 requests = "^2.32.0"
 python-dotenv = "^1.2.2"
 pydantic = "^2.13.3"
+pypdf = "^6.19.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
@@ -36,6 +37,15 @@ datasets = "^3.0.0"
 [tool.poetry.group.notebook.dependencies]
 ipykernel = "^7.2.0"
 jupyter = "^1.1.1"
+
+
+[tool.poetry.group.ingestion.dependencies]
+pymupdf4llm = "^1.28.2"
+markitdown = {extras = ["all"], version = "^0.1.7"}
+easyocr = "^1.7.2"
+tiktoken = "^0.14.0"
+verovio = "^6.3.0"
+openai-whisper = "^20250625"
 
 [build-system]
 requires = ["poetry-core"]
