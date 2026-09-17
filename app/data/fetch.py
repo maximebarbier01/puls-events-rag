@@ -39,7 +39,7 @@ def fetch_events(
     min_last_date: str | None = None,
     page_size: int = PAGE_SIZE,
 ) -> pd.DataFrame:
-    """Paginate through the Explore API for a department, optionally bounded by date."""
+    """Parcourt l'API Explore pour un service, en limitant éventuellement la recherche par date."""
     where = f'location_department="{department}"'
     if min_last_date:
         where += f" AND lastdate_end >= date'{min_last_date}'"

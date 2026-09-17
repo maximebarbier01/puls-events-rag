@@ -17,23 +17,21 @@ RECENCY_WINDOW_DAYS = 365
 CANCELED_STATUS_ID = 6
 FULL_STATUS_ID = 5
 
-# Sources found in the Moselle export that are not cultural events: France Travail
-# recruitment sessions, agriculture chambers, cycling/sport promo campaigns, digital
-# economy for SMEs, etc. Puls-Events is a cultural-events platform, so these are
-# excluded even though they pass the geographic/date/status filters.
+# Sources identifiées dans l'exportation « Moselle » qui ne concernent pas des événements culturels :
+# France Travail, salons de recrutement, chambres d'agriculture,
+# économie numérique, pour les PME, etc.
+# Puls-Events étant une plateforme dédiée aux événements culturels,
+# ces sources sont exclues même si elles répondent aux critères de filtrage
+# (géographiques, de dates et de statut).
 EXCLUDED_ORIGINAGENDA_TITLES = {
     "Mes événements France Travail",
     "SolutionsCSE",
-    "Challenges Geovelo",
-    "Mai à vélo",
     "Chambre d'agriculture de la Moselle",
     "Chambre d'agriculture Grand-Est",
     "2026 : Journées Nationales de l'Agriculture Coopérative  U",
     "Journées Nationales de l'Agriculture 2026",
     "Agenda France Num du numérique pour les TPE PME",
-    "Fédération française de cyclotourisme",
     "Printemps Bio 2026",
-    "Api'Week 2026",
     "Ambassadeurs IA",
     "Ensemble, dialoguons - Édition 2026 | Banque de France",
     "Mécénat en Grand Est",
@@ -64,7 +62,7 @@ def load_raw_events(path: Path) -> pd.DataFrame:
 def filter_recent_events(
     df: pd.DataFrame, reference_date: datetime, days: int = RECENCY_WINDOW_DAYS
 ) -> pd.DataFrame:
-    """Keep events with up to `days` of history, and all upcoming events (no cap)."""
+    """Conserve les événements remontants jusqu'à `days`, ainsi que tous les événements à venir (sans limite).."""
     cutoff = pd.Timestamp(reference_date - timedelta(days=days))
     cutoff = (
         cutoff.tz_localize("UTC") if cutoff.tzinfo is None else cutoff.tz_convert("UTC")
@@ -97,7 +95,7 @@ def clean_html(text) -> str:
 
 
 def _as_text(value) -> str:
-    """Normalize a field that OpenAgenda may return as a scalar or a list/array."""
+    """Normaliser un champ qu'OpenAgenda peut renvoyer sous forme de scalaire ou de liste/tableau."""
     if isinstance(value, (list, tuple, np.ndarray)):
         return ", ".join(str(v) for v in value)
     return str(value)

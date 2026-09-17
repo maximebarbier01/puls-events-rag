@@ -21,7 +21,7 @@ def main() -> None:
         .isoformat()
     )
     print(
-        f"Récupération des événements pour le département={DEPARTMENT!r} (lastdate_end >= {min_last_date})..."
+        f"Récupération des événements pour le département {DEPARTMENT!r} (lastdate_end >= {min_last_date})..."
     )
 
     df = fetch_events(department=DEPARTMENT, min_last_date=min_last_date)
