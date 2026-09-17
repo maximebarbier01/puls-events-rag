@@ -1,11 +1,11 @@
-"""Build data/processed/events_clean.parquet from the raw Open Agenda export."""
+"""Build data/interim/events_clean.parquet from the raw Open Agenda export."""
 from pathlib import Path
 
 from app.data.preprocessing import preprocess
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_PATH = PROJECT_ROOT / "data/raw/evenements-publics-openagenda.parquet"
-OUTPUT_PATH = PROJECT_ROOT / "data/processed/events_clean.parquet"
+OUTPUT_PATH = PROJECT_ROOT / "data/interim/events_clean.parquet"
 
 
 def main() -> None:
