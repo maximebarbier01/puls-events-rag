@@ -122,6 +122,6 @@ poetry run pytest
 - [x] Étape 1 — Environnement de développement
 - [x] Étape 2 — Pré-processing des données Open Agenda
 - [x] Étape 3 — Base vectorielle FAISS
-- [ ] Étape 4 — Intégration LangChain / RAG
+- [x] Étape 4 — Intégration LangChain / RAG (code prêt et testé ; vérification bout-en-bout avec la vraie API Mistral en attente d'une clé dans `.env`)
 - [ ] Étape 5 — API REST
 - [ ] Étape 6 — Conteneurisation et démo

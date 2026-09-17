@@ -1,9 +1,6 @@
 """Unit tests for app.vectorstore.build — a fake deterministic Embeddings, no real model."""
-import hashlib
-
 import pandas as pd
 import pytest
-from langchain_core.embeddings import Embeddings
 
 from app.vectorstore.build import (
     build_index,
@@ -12,22 +9,6 @@ from app.vectorstore.build import (
     save_index,
     to_documents,
 )
-
-VECTOR_DIM = 16
-
-
-class FakeEmbeddings(Embeddings):
-    """Deterministic, hash-based fake embeddings — fast and network-free for tests."""
-
-    def _vector(self, text: str) -> list[float]:
-        digest = hashlib.sha256(text.encode("utf-8")).digest()
-        return [b / 255.0 for b in digest[:VECTOR_DIM]]
-
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [self._vector(t) for t in texts]
-
-    def embed_query(self, text: str) -> list[float]:
-        return self._vector(text)
 
 
 @pytest.fixture
@@ -101,9 +82,9 @@ def test_chunk_documents_splits_long_text_and_propagates_metadata():
     assert all(len(c.page_content) <= 200 for c in chunks)
 
 
-def test_build_index_and_similarity_search_returns_relevant_documents(sample_df):
+def test_build_index_and_similarity_search_returns_relevant_documents(sample_df, fake_embeddings):
     documents = to_documents(sample_df)
-    vectorstore = build_index(documents, FakeEmbeddings())
+    vectorstore = build_index(documents, fake_embeddings)
 
     results = vectorstore.similarity_search("Concert de jazz au Centre Pompidou-Metz ce samedi.", k=1)
 
@@ -111,9 +92,9 @@ def test_build_index_and_similarity_search_returns_relevant_documents(sample_df)
     assert results[0].metadata["uid"] == "1"
 
 
-def test_save_and_load_index_round_trip(tmp_path, sample_df):
+def test_save_and_load_index_round_trip(tmp_path, sample_df, fake_embeddings):
     documents = to_documents(sample_df)
-    embeddings = FakeEmbeddings()
+    embeddings = fake_embeddings
     vectorstore = build_index(documents, embeddings)
 
     index_path = tmp_path / "events_faiss"
