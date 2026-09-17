@@ -30,7 +30,19 @@ Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
 
 ## Zone et période couvertes
 
-_À préciser à l'étape 2 (pré-processing des données)._
+- **Zone géographique** : département de la Moselle (Grand Est), via le filtre
+  `location_department="Moselle"` de l'API Open Agenda.
+- **Fenêtre temporelle** : 1 an d'historique + tous les événements à venir (pas de
+  plafond dans le futur), soit `lastdate_end >= aujourd'hui - 365 jours`.
+- **Filtre thématique** : les événements sont en plus filtrés pour exclure les sources
+  non-culturelles présentes dans le jeu de données brut (ex : sessions de recrutement
+  "France Travail", agriculture, cyclisme promotionnel...) — voir
+  `EXCLUDED_ORIGINAGENDA_TITLES` dans [app/data/preprocessing.py](app/data/preprocessing.py).
+- **Statut** : les événements annulés sont exclus ; les événements complets sont gardés
+  mais signalés (`is_full`).
+- Résultat : ~1439 événements culturels propres dans
+  `data/processed/events_clean.parquet` (à partir de 2829 lignes brutes récupérées via
+  `scripts/fetch_openagenda.py`).
 
 ## Structure du projet
 
@@ -107,7 +119,7 @@ poetry run pytest
 ## Avancement
 
 - [x] Étape 1 — Environnement de développement
-- [ ] Étape 2 — Pré-processing des données Open Agenda
+- [x] Étape 2 — Pré-processing des données Open Agenda
 - [ ] Étape 3 — Base vectorielle FAISS
 - [ ] Étape 4 — Intégration LangChain / RAG
 - [ ] Étape 5 — API REST
