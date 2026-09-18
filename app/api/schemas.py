@@ -17,7 +17,7 @@ class AskRequest(BaseModel):
         ...,
         min_length=1,
         description="Question posée par l'utilisateur, en français.",
-        examples=["Quels concerts de musique à Metz ce week-end ?"],
+        examples=["Quels concerts de musique à Metz samedi 3 octobre 2026 ?"],
     )
 
     @field_validator("question")
