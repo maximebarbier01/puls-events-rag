@@ -24,7 +24,8 @@ index/
 eval/results.csv
 
 # Présentation
-docs/ 
+docs/generate_presentation.py
+docs/Puls-Events-RAG-Presentation.pptx
 
 # Scratch personnel (scripts d'exploration, pas des tests pytest)
 tests/test.py
