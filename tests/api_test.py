@@ -141,3 +141,36 @@ def test_docs_page_is_served(client):
     response = client.get("/docs")
 
     assert response.status_code == 200
+
+
+def test_health_reports_ok_when_vectorstore_and_llm_are_loaded(client):
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["vectorstore_loaded"] is True
+    assert body["llm_configured"] is True
+
+
+def test_metadata_reflects_current_index_size(client):
+    response = client.get("/metadata")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["nb_chunks_indexed"] == 1  # l'unique événement de la fixture "client"
+    assert body["embedding_model"]
+    assert body["llm_model"]
+    assert body["default_top_k"] == 5
+
+
+def test_metadata_reads_the_live_vectorstore_not_a_stale_value(client, monkeypatch):
+    """/rebuild remplace app.state.vectorstore par une toute nouvelle instance FAISS
+    (voir app/api/routes.py::rebuild) : /metadata doit refléter cette nouvelle
+    instance immédiatement, pas une valeur mise en cache à l'ancien objet."""
+    monkeypatch.setenv("REBUILD_TOKEN", "le-bon-jeton")
+    client.post("/rebuild", headers={"X-Rebuild-Token": "le-bon-jeton"})
+
+    response = client.get("/metadata")
+
+    assert response.json()["nb_chunks_indexed"] == 1

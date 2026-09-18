@@ -151,6 +151,22 @@ Protégé par un jeton (`REBUILD_TOKEN` dans `.env`) :
 curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
 ```
 
+**`GET /health`** — vérifier que l'API est opérationnelle (index et modèle bien
+chargés), sans appel réseau ni génération :
+
+```bash
+curl http://localhost:8000/health
+```
+
+**`GET /metadata`** — informations sur le système en place (modèle d'embedding,
+modèle Mistral utilisé, taille actuelle de l'index, `k` par défaut), utile aux
+équipes métier pour savoir sur quoi reposent les réponses de `/ask` sans lire le
+code :
+
+```bash
+curl http://localhost:8000/metadata
+```
+
 ## Évaluation (Ragas)
 
 Jeu de test annoté : [eval/qa_dataset.json](eval/qa_dataset.json) — 12 questions avec
