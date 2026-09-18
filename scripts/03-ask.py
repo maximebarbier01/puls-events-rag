@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INDEX_PATH = PROJECT_ROOT / "index/events_faiss"
 
 # Question utilisée si aucune question n'est passée dans le terminal
-DEFAULT_QUESTION = "Quels concerts de musique à Metz ce week-end ?"
+DEFAULT_QUESTION = "Quels concerts de musique à Metz samedi 3 octobre 2026 ?"
 
 
 def main() -> None:
