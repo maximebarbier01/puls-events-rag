@@ -4,7 +4,7 @@ import pytest
 from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-from app.rag.chain import answer_question, format_docs
+from app.rag.chain import SYSTEM_PROMPT, answer_question, format_docs
 from app.vectorstore.build import build_index, to_documents
 
 
@@ -62,6 +62,17 @@ def test_answer_question_returns_llm_answer_and_retrieved_sources(sample_df, fak
     assert result.answer == "Il y a un concert de jazz samedi à Metz."
     assert len(result.sources) == 2
     assert {doc.metadata["uid"] for doc in result.sources} == {"1", "2"}
+
+
+def test_system_prompt_instructs_the_model_to_refuse_when_context_does_not_match():
+    """Garde-fou de non-régression : si quelqu'un modifie le prompt par erreur et
+    retire la consigne anti-hallucination, ce test doit échouer. Ça ne vérifie pas
+    que le vrai modèle obéit (ça, seul un appel réel peut le confirmer — voir
+    tests/test_rag_integration.py), juste que l'instruction est toujours présente."""
+    prompt_lower = SYSTEM_PROMPT.lower()
+    assert "correspond" in prompt_lower
+    assert "dis-le clairement" in prompt_lower
+    assert "invente" in prompt_lower
 
 
 def test_answer_question_does_not_crash_on_unrelated_query(sample_df, fake_embeddings):
