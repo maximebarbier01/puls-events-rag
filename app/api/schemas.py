@@ -1,8 +1,8 @@
 """
 Modèles Pydantic pour les requêtes et réponses de l'API.
 
-Ces modèles servent aussi à générer automatiquement la documentation Swagger
-(/docs) : chaque champ documenté ici apparaît dans l'interface interactive.
+Ces modèles servent aussi à générer automatiquement la documentation
+Swagger (/docs) : chaque champ documenté ici apparaît dans l'interface interactive.
 """
 
 from pydantic import BaseModel, Field, field_validator
