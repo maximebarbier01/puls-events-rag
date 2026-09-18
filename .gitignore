@@ -23,6 +23,9 @@ index/
 *.pkl
 eval/results.csv
 
+# Présentation
+docs/ 
+
 # Scratch personnel (scripts d'exploration, pas des tests pytest)
 tests/test.py
 
