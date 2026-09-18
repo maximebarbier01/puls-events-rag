@@ -1,12 +1,12 @@
 # Puls-Events RAG
 
 POC d'assistant intelligent capable de répondre à des questions sur des événements
-culturels à venir, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
-combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel
-(Mistral), orchestré avec LangChain. Les événements proviennent de l'API
+culturels à venir en Moselle, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
+combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel(Mistral), 
+orchestré avec un framework (LangChain). Les événements proviennent de l'API
 [Open Agenda](https://data.opendatasoft.com/api/explore/v2.1/console).
 
-Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
+Mission réalisée pour Puls-Events dans le cadre du projet OpenClassrooms
 "Concevez et déployez un système RAG".
 
 ## Table des matières
