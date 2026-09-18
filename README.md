@@ -19,6 +19,7 @@ Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
 - [Configuration](#configuration)
 - [Reproduction depuis zéro](#reproduction-depuis-zéro)
 - [Tests](#tests)
+- [Utiliser l'API](#utiliser-lapi)
 
 ## Objectifs
 
@@ -117,11 +118,43 @@ poetry run python -c "import faiss; from langchain_community.vectorstores import
 poetry run pytest
 ```
 
+Aucun test n'appelle un vrai modèle d'embedding ni la vraie API Mistral (faux
+objets déterministes partout : `tests/conftest.py`, `FakeListChatModel`) — la suite
+est rapide, gratuite et reproductible en CI.
+
+## Utiliser l'API
+
+```bash
+poetry run uvicorn app.main:app --reload
+```
+
+Documentation interactive (Swagger) : http://localhost:8000/docs
+
+Au démarrage, l'API charge une seule fois le modèle d'embedding, l'index FAISS et le
+client Mistral (voir le `lifespan` dans `app/main.py`) — ils ne sont jamais rechargés
+à chaque requête.
+
+**`POST /ask`** — poser une question :
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Quels concerts à Metz ce week-end ?"}'
+```
+
+**`POST /rebuild`** — reconstruire l'index (relit `data/raw`, renettoie, réindexe).
+Protégé par un jeton (`REBUILD_TOKEN` dans `.env`) :
+
+```bash
+curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
+```
+
 ## Avancement
 
 - [x] Étape 1 — Environnement de développement
 - [x] Étape 2 — Pré-processing des données Open Agenda
 - [x] Étape 3 — Base vectorielle FAISS
-- [x] Étape 4 — Intégration LangChain / RAG (code prêt et testé ; vérification bout-en-bout avec la vraie API Mistral en attente d'une clé dans `.env`)
+- [x] Étape 4 — Intégration LangChain / RAG
+- [x] Étape 5 — API REST (FastAPI, `/ask`, `/rebuild` protégé, Swagger, `tests/api_test.py`)
 - [ ] Étape 5 — API REST
 - [ ] Étape 6 — Conteneurisation et démo
