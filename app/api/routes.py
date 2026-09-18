@@ -57,17 +57,19 @@ def verify_rebuild_token(x_rebuild_token: str | None = Header(default=None)) -> 
         )
 
     if x_rebuild_token != expected_token:
-        raise HTTPException(status_code=401, detail="Jeton X-Rebuild-Token invalide ou manquant.")
+        raise HTTPException(
+            status_code=401, detail="Jeton X-Rebuild-Token invalide ou manquant."
+        )
 
 
 @router.post(
     "/ask",
     response_model=AskResponse,
-    summary="Poser une question au système RAG",
+    summary="Poser une question à PulsEvents",
     description=(
         "Récupère les événements les plus pertinents dans l'index FAISS, puis "
         "demande à Mistral de générer une réponse en français à partir de ce "
-        "contexte. Attend un corps JSON `{\"question\": \"...\"}` ; la question ne "
+        'contexte. Attend un corps JSON `{"question": "..."}` ; la question ne '
         "peut pas être vide."
     ),
 )
@@ -84,7 +86,9 @@ def ask(
     except Exception:
         # On ne renvoie jamais la trace brute au client (elle pourrait contenir des
         # détails internes) : on logge côté serveur et on renvoie un message générique.
-        logger.exception("Échec de la génération de réponse pour la question : %s", payload.question)
+        logger.exception(
+            "Échec de la génération de réponse pour la question : %s", payload.question
+        )
         raise HTTPException(
             status_code=500,
             detail="Le système RAG n'a pas pu générer de réponse pour le moment.",

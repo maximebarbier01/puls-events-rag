@@ -49,7 +49,7 @@ app = FastAPI(
         "API exposant le système RAG (LangChain + FAISS + Mistral)"
         "de recommandation d'événements culturels en Moselle."
     ),
-    version="0.1.0",
+    version="0.1.1",
     lifespan=lifespan,
 )
 
