@@ -1,0 +1,60 @@
+name: Évaluation RAG (Ragas)
+
+# Déclenchement manuel, ou automatique uniquement sur push vers main (les jalons
+# validés du projet) — pas sur develop/feature, pour ne pas lancer de vrais appels
+# Mistral payants à chaque commit.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Récupération du code source
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      # 2. Configuration de l'environnement Python
+      - name: Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # 3. Installation de Poetry et des dépendances (groupe eval uniquement : pas
+      # besoin de dev/notebook/ingestion pour lancer l'évaluation)
+      - name: Installation de Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Installation des dépendances
+        run: poetry install --with eval
+
+      # 4. Reconstitution des données et de l'index à partir de zéro (pas de cache,
+      # pour rester simple — ça ajoute quelques minutes au run)
+      - name: Récupération des données Open Agenda
+        run: poetry run python scripts/00-fetch_openagenda.py
+
+      - name: Nettoyage des données
+        run: poetry run python scripts/01-preprocess.py
+
+      - name: Construction de l'index FAISS
+        run: poetry run python scripts/02-build_index.py
+
+      # 5. Évaluation du système RAG avec Ragas (vrais appels à l'API Mistral)
+      - name: Évaluation Ragas
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: poetry run python scripts/04-evaluate_rag.py
+
+      # 6. Publication du détail des scores comme artefact du run
+      - name: Publication des résultats
+        uses: actions/upload-artifact@v4
+        with:
+          name: ragas-results
+          path: eval/results.csv

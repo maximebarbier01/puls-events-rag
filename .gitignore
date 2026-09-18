@@ -21,6 +21,7 @@ data/external/
 index/
 *.faiss
 *.pkl
+eval/results.csv
 
 # Scratch personnel (scripts d'exploration, pas des tests pytest)
 tests/test.py

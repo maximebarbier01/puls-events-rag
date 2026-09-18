@@ -20,6 +20,7 @@ Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
 - [Reproduction depuis zéro](#reproduction-depuis-zéro)
 - [Tests](#tests)
 - [Utiliser l'API](#utiliser-lapi)
+- [Évaluation (Ragas)](#évaluation-ragas)
 
 ## Objectifs
 
@@ -149,6 +150,41 @@ Protégé par un jeton (`REBUILD_TOKEN` dans `.env`) :
 curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
 ```
 
+## Évaluation (Ragas)
+
+Jeu de test annoté : [eval/qa_dataset.json](eval/qa_dataset.json) — 12 questions avec
+réponses de référence, incluant des cas limites volontaires (questions hors périmètre
+géographique/thématique) pour vérifier que le système refuse d'halluciner.
+
+```bash
+poetry run python scripts/04-evaluate_rag.py
+```
+
+Fait de vrais appels à l'API Mistral (génération + jugement des métriques) : coûte
+quelques dizaines de centimes, prend une à deux minutes. Ce n'est pas un test pytest
+(pas lancé à chaque `pytest`), volontairement séparé pour ne pas mélanger "tests
+gratuits rapides" et "évaluation qui coûte et prend du temps".
+
+4 métriques Ragas, jugées par notre propre modèle Mistral (pas OpenAI) via les
+wrappers `LangchainLLMWrapper`/`LangchainEmbeddingsWrapper` :
+- **Faithfulness** — la réponse est-elle fidèle au contexte récupéré (pas d'invention) ?
+- **Answer relevancy** — la réponse correspond-elle bien à la question posée ?
+- **Context precision** — les documents récupérés sont-ils pertinents ?
+- **Context recall** — le contexte récupéré couvre-t-il la réponse de référence ?
+
+À noter pour l'interprétation : les questions "pièges" (hors-sujet, hors périmètre)
+font naturellement chuter `answer_relevancy` même quand le système répond
+correctement en refusant — cette métrique compare la réponse à la question par
+similarité sémantique, et une réponse de refus courte ne "ressemble" pas à la
+question initiale. Un score bas sur ces questions précises n'indique donc pas un
+problème de qualité.
+
+Résultats détaillés sauvegardés dans `eval/results.csv` (non versionné,
+régénérable). Le workflow
+[.github/workflows/evaluate_rag.yml](.github/workflows/evaluate_rag.yml) relance
+cette évaluation automatiquement à chaque push sur `main`, ou manuellement
+(`workflow_dispatch`) — nécessite le secret de dépôt `MISTRAL_API_KEY`.
+
 ## Avancement
 
 - [x] Étape 1 — Environnement de développement
@@ -156,5 +192,5 @@ curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
 - [x] Étape 3 — Base vectorielle FAISS
 - [x] Étape 4 — Intégration LangChain / RAG
 - [x] Étape 5 — API REST (FastAPI, `/ask`, `/rebuild` protégé, Swagger, `tests/api_test.py`)
-- [ ] Étape 5 — API REST
+- [x] Évaluation Ragas (jeu de test annoté + `scripts/04-evaluate_rag.py` + CI GitHub Actions)
 - [ ] Étape 6 — Conteneurisation et démo
