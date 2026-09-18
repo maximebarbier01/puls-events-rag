@@ -12,11 +12,24 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from langchain_core.language_models import BaseChatModel
 from langchain_core.vectorstores import VectorStore
 
-from app.api.schemas import AskRequest, AskResponse, RebuildResponse, SourceItem
+from app.api.schemas import (
+    AskRequest,
+    AskResponse,
+    HealthResponse,
+    MetadataResponse,
+    RebuildResponse,
+    SourceItem,
+)
 from app.core.config import get_rebuild_token
 from app.data.preprocessing import preprocess
-from app.rag.chain import answer_question
-from app.vectorstore.build import build_index, chunk_documents, save_index, to_documents
+from app.rag.chain import DEFAULT_K, DEFAULT_MODEL, answer_question
+from app.vectorstore.build import (
+    EMBEDDING_MODEL_NAME,
+    build_index,
+    chunk_documents,
+    save_index,
+    to_documents,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +73,49 @@ def verify_rebuild_token(x_rebuild_token: str | None = Header(default=None)) -> 
         raise HTTPException(
             status_code=401, detail="Jeton X-Rebuild-Token invalide ou manquant."
         )
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Vérifier que l'API est opérationnelle",
+    description=(
+        "Endpoint de liveness/readiness : confirme que l'index FAISS et le client "
+        "Mistral sont bien chargés en mémoire, sans faire aucun appel réseau ni "
+        "génération. N'attend aucun paramètre."
+    ),
+)
+def health(
+    vectorstore: VectorStore = Depends(get_vectorstore),
+    llm: BaseChatModel = Depends(get_llm),
+) -> HealthResponse:
+    return HealthResponse(
+        status="ok",
+        vectorstore_loaded=vectorstore is not None,
+        llm_configured=llm is not None,
+    )
+
+
+@router.get(
+    "/metadata",
+    response_model=MetadataResponse,
+    summary="Informations sur le système RAG en place",
+    description=(
+        "Donne aux équipes métier une vue sur ce qui alimente /ask (modèle "
+        "d'embedding, modèle de génération, taille actuelle de l'index, nombre de "
+        "documents récupérés par question) sans avoir à lire le code. N'attend "
+        "aucun paramètre."
+    ),
+)
+def metadata(vectorstore: VectorStore = Depends(get_vectorstore)) -> MetadataResponse:
+    # vectorstore.index.ntotal reflète toujours l'état courant de l'index, y compris
+    # après un /rebuild (pas besoin de le recalculer ni de le stocker à part).
+    return MetadataResponse(
+        embedding_model=EMBEDDING_MODEL_NAME,
+        llm_model=DEFAULT_MODEL,
+        nb_chunks_indexed=vectorstore.index.ntotal,
+        default_top_k=DEFAULT_K,
+    )
 
 
 @router.post(
