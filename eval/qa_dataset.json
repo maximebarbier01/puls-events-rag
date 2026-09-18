@@ -1,0 +1,50 @@
+[
+  {
+    "question": "Quel musée visiter en ce mois de septembre à Metz ?",
+    "reference_answer": "À Metz, tu peux visiter :\n- Musée de La Cour d'Or - Eurométropole (visite libre)\n  Dates : 20 et 21 septembre 2025\n  Lieu : Musée de La Cour d'Or - Eurométropole, Metz"
+  },
+  {
+    "question": "Quels concerts de musique à Metz ce week-end ?",
+    "reference_answer": "Voici les concerts à Metz ce dimanche 21 juin :\n\nPlace de la Comédie :\n- Lycée Georges de la Tour option musique : 17h30 (Pop)\n- Séga Vibes : 20h00 (Musique du monde)\n- Kwjibo : 22h00 (Jazz, électro, rock)\n\nPlace de la République :\n- BluMea : 17h30 (Rock)\n- Animaal Perplexx : 19h30 (Rock)\n- VNR Ambition : 21h30 (Rap, Hip-Hop)\n\nTous les concerts sont gratuits et en accès libre."
+  },
+  {
+    "question": "Quelles expositions gratuites en ce moment à Metz ?",
+    "reference_answer": "Voici les expositions gratuites en ce moment à Metz selon le contexte :\n- « Un trésor de patrimoines » — 19 - 21 septembre 2025 — Hôtel de Ville, Metz\n- Visite libre du Musée de La Cour d'Or — 20 et 21 septembre 2025 — Musée de La Cour d'Or - Eurométropole, Metz"
+  },
+  {
+    "question": "Y a-t-il des visites guidées de musées en Moselle ?",
+    "reference_answer": "Oui, voici les visites guidées de musées en Moselle :\n- Visite nocturne des archives de la Moselle\n  Dates : 19 et 20 septembre\n  Lieu : Archives départementales de la Moselle, Saint-Julien-lès-Metz\n  Détails : Visite du bâtiment (anciens abattoirs, centre départemental de l'enfance, etc.), exposition « 100 ans de colonies de vacances en Moselle », ateliers de sigillographie, reliure et restauration."
+  },
+  {
+    "question": "Quels événements au Centre Pompidou-Metz ?",
+    "reference_answer": "Voici les événements au Centre Pompidou-Metz mentionnés dans le contexte :\n1. Visite architecture du Centre Pompidou-Metz — 22 septembre - 31 octobre 2025 — Centre Pompidou-Metz, Metz\n2. Dimanche sans fin. Maurizio Cattelan & la collection du Centre Pompidou — 8 mai 2025 - 1 février 2027 — Centre Pompidou - Metz, Metz\n3. Visite Archi'insolite — 20 et 21 septembre 2025 — Centre Pompidou - Metz, Metz\n4. Visite libre de l'exposition \"François Morellet. 100 pour cent\" — 19 et 20 septembre — Centre Pompidou - Metz, Metz"
+  },
+  {
+    "question": "Quelle est la recette du brownie au chocolat ?",
+    "reference_answer": "Aucun événement dans le contexte ne propose de recette pour un brownie au chocolat."
+  },
+  {
+    "question": "Quelle est la recette du Rougail Saucisse ?",
+    "reference_answer": "Aucun événement dans le contexte ne mentionne une recette pour le Rougail Saucisse."
+  },
+  {
+    "question": "Quels événements accessibles aux personnes à mobilité réduite en Moselle ?",
+    "reference_answer": "Voici les événements accessibles aux personnes à mobilité réduite en Moselle :\n- Visite libre du Parc Simon — 20 et 21 septembre 2025 — Parc Simon, Augny — Accessibilité : handicap visuel, handicap intellectuel, handicap psychique, handicap auditif, handicap moteur\n- Balade à vélo — Samedi 2 mai, 09h30 — Parc de la Seille, Metz — Accessibilité : adapté à différents niveaux (parcours adapté)"
+  },
+  {
+    "question": "Que faire à Thionville ce mois-ci ?",
+    "reference_answer": "Voici une sélection d'événements à Thionville ce mois-ci :\n- Le beffroi raconté par son gardien — Dimanche 21 septembre 2025, 14h30 — Pays Thionvillois Tourisme, Thionville\n- Balade \"Thionville au temps jadis\" — Samedi 20 septembre 2025, 16h00 — Pays Thionvillois Tourisme, Thionville\n- Découvrez Thionville sous la loupe de l'inspecteur Bonsens — Dimanche 20 septembre 2025, 16h00 — Pays Thionvillois Tourisme, Thionville\n- La station d'épuration de Thionville : architecture industrielle et paysage fluvial — Samedi 20 septembre 2025, 09h30 — Station d'épuration Thionville, Thionville"
+  },
+  {
+    "question": "Quels concerts à Paris ce week-end ?",
+    "reference_answer": "Aucun concert à Paris n'est mentionné dans le contexte fourni."
+  },
+  {
+    "question": "Quels événements ont lieu demain ?",
+    "reference_answer": "Aucun événement du contexte n'a lieu demain."
+  },
+  {
+    "question": "Recommande-moi une sortie culturelle originale en Moselle.",
+    "reference_answer": "Voici une suggestion originale en Moselle : Visite commentée et démonstration de pratique céramique — 19 et 20 septembre — Moulin de la Blies - Musée des techniques faïencières et Jardin des Faïenciers, Sarreguemines. Découverte du savoir-faire ancestral de la faïence de Sarreguemines, avec des démonstrations en direct et des visites commentées."
+  }
+]
