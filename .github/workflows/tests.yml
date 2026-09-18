@@ -1,0 +1,40 @@
+name: Tests
+
+# Tourne sur chaque Pull Request vers develop/main : sert de garde-fou obligatoire
+# avant de pouvoir merger (règle de protection de branche configurée côté GitHub).
+# Gratuit et rapide : aucun test n'appelle un vrai modèle ni une vraie API (voir
+# tests/conftest.py, FakeListChatModel) — pas besoin de secret ici.
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Installation de Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Installation des dépendances
+        run: poetry install --with dev
+
+      - name: Lancement de la suite de tests
+        run: poetry run pytest -v

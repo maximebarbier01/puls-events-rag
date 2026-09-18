@@ -1,0 +1,20 @@
+services:
+  api:
+    build: .
+    container_name: puls-events-rag-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # data/ et index/ doivent déjà exister en local (voir README) : construits via
+      # poetry run python scripts/00-fetch_openagenda.py, puis 01-preprocess.py,
+      # puis 02-build_index.py, avant le premier "docker compose up".
+      - ./data:/app/data
+      - ./index:/app/index
+      # Volume nommé pour le cache du modèle d'embedding HuggingFace : évite de le
+      # retélécharger à chaque recréation du conteneur.
+      - hf_cache:/home/appuser/.cache/huggingface
+
+volumes:
+  hf_cache:

@@ -1,12 +1,12 @@
 # Puls-Events RAG
 
 POC d'assistant intelligent capable de répondre à des questions sur des événements
-culturels à venir, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
-combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel
-(Mistral), orchestré avec LangChain. Les événements proviennent de l'API
+culturels à venir en Moselle, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
+combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel(Mistral), 
+orchestré avec un framework (LangChain). Les événements proviennent de l'API
 [Open Agenda](https://data.opendatasoft.com/api/explore/v2.1/console).
 
-Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
+Mission réalisée pour Puls-Events dans le cadre du projet OpenClassrooms
 "Concevez et déployez un système RAG".
 
 ## Table des matières
@@ -21,6 +21,7 @@ Mission réalisée pour Puls-Events dans le cadre du parcours OpenClassrooms
 - [Tests](#tests)
 - [Utiliser l'API](#utiliser-lapi)
 - [Évaluation (Ragas)](#évaluation-ragas)
+- [Déploiement local avec Docker](#déploiement-local-avec-docker)
 
 ## Objectifs
 
@@ -185,6 +186,47 @@ régénérable). Le workflow
 cette évaluation automatiquement à chaque push sur `main`, ou manuellement
 (`workflow_dispatch`) — nécessite le secret de dépôt `MISTRAL_API_KEY`.
 
+## Déploiement local avec Docker
+
+Prérequis : avoir déjà construit les données et l'index **en local** au moins une
+fois (l'image Docker ne contient ni les données ni l'index, montés en volumes au
+lancement — voir `docker-compose.yml`) :
+
+```bash
+poetry run python scripts/00-fetch_openagenda.py
+poetry run python scripts/01-preprocess.py
+poetry run python scripts/02-build_index.py
+```
+
+Avoir aussi un `.env` complet (`MISTRAL_API_KEY`, `REBUILD_TOKEN`).
+
+```bash
+docker compose up --build
+```
+
+L'API est alors disponible exactement comme en local (mêmes endpoints, même
+Swagger) :
+
+```bash
+curl http://localhost:8000/docs
+
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Quels concerts à Metz ce week-end ?"}'
+
+curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
+```
+
+Le conteneur tourne avec un utilisateur non-root, et le modèle d'embedding est mis
+en cache dans un volume Docker nommé (`hf_cache`) — les redémarrages suivants
+(`docker compose up`, sans `--build`) sont quasi instantanés. `data/` et `index/`
+sont montés en volumes (pas copiés dans l'image) : un `/rebuild` déclenché depuis le
+conteneur écrit directement sur ces dossiers côté hôte.
+
+```bash
+docker compose down
+```
+
 ## Avancement
 
 - [x] Étape 1 — Environnement de développement
@@ -193,4 +235,4 @@ cette évaluation automatiquement à chaque push sur `main`, ou manuellement
 - [x] Étape 4 — Intégration LangChain / RAG
 - [x] Étape 5 — API REST (FastAPI, `/ask`, `/rebuild` protégé, Swagger, `tests/api_test.py`)
 - [x] Évaluation Ragas (jeu de test annoté + `scripts/04-evaluate_rag.py` + CI GitHub Actions)
-- [ ] Étape 6 — Conteneurisation et démo
+- [x] Étape 6 — Conteneurisation Docker (build + run testés bout en bout : `/docs`, `/ask`, `/rebuild`) ; présentation PowerPoint à faire séparément

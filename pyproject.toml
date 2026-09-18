@@ -23,6 +23,7 @@ python-dotenv = "^1.2.2"
 pydantic = "^2.13.3"
 pypdf = "^6.19.0"
 beautifulsoup4 = "^4.15.0"
+pyarrow = "^25.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
