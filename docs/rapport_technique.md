@@ -399,26 +399,38 @@ wrappers `LangchainLLMWrapper`/`LangchainEmbeddingsWrapper` :
 
 ### Résultats obtenus
 
-| Métrique | Score global (12 questions) | Hors questions pièges (8 questions) |
+Moyenne de 3 exécutions consécutives, sur l'index courant (1918 chunks) et le même jeu
+de 12 questions. Le juge Ragas étant lui-même un LLM, les scores varient d'une
+exécution à l'autre : sur ces 3 exécutions, Faithfulness 0.88 à 0.96, Answer relevancy
+0.61 à 0.62, Context precision 0.47 à 0.54, Context recall 0.81 à 0.86 (score global).
+
+| Métrique | Score global (12 questions) | Hors refus (8 questions) |
 |---|---|---|
-| Faithfulness | 0.888 | 0.895 |
-| Answer relevancy | 0.548 | 0.822 |
-| Context precision | 0.660 | 0.667 |
-| Context recall | 0.872 | 0.933 |
+| Faithfulness | 0.92 | 0.94 |
+| Answer relevancy | 0.61 | 0.82 |
+| Context precision | 0.50 | 0.50 |
+| Context recall | 0.82 | 0.86 |
 
-**Analyse qualitative** : les scores `answer_relevancy` et `context_recall` chutent
-fortement sur les 4 questions pièges, alors même que le système **répond
-correctement en refusant**. `answer_relevancy` compare, par similarité sémantique, la
-question posée à des questions reconstruites à partir de la réponse — une réponse de
-refus courte ("Aucun événement... ne propose de recette") ne "ressemble" pas à la
-question initiale, ce qui fait chuter le score mécaniquement. C'est une limite connue
-de la métrique elle-même, pas un défaut de fonctionnement du système : recalculées sur
-les seules questions "répondables", les métriques remontent nettement
-(`answer_relevancy` : 0.822).
+La colonne « hors refus » exclut les 4 questions dont la bonne réponse est de refuser
+ou de constater une absence : brownie, Rougail saucisse, concerts à Paris, « demain ».
 
-Le point faible réel identifié est le **context precision** (~0.66), y compris hors
-questions pièges : une partie des documents récupérés (k=5) n'est pas toujours
-pertinente pour la question posée — piste d'amélioration détaillée en section 8.
+**Analyse qualitative** : sur ces questions, le système **répond correctement en
+refusant**, mais deux métriques le sanctionnent mécaniquement.
+- `answer_relevancy` tombe à 0 sur les trois refus classiques (brownie, Rougail, Paris) :
+  elle compare, par similarité sémantique, la question posée à des questions reconstruites
+  à partir de la réponse, et un refus court ("Aucun événement... ne propose de recette")
+  ne "ressemble" pas à la question initiale.
+- `context_recall` tombe à 0 sur « demain » : la réponse de référence affirme une
+  absence d'événement, qu'aucun passage du contexte récupéré ne peut "prouver".
+
+Ce sont des limites connues des métriques elles-mêmes, pas un défaut de fonctionnement
+du système : recalculée sur les seules questions "répondables", `answer_relevancy`
+remonte à 0.82.
+
+Le point faible réel identifié est le **context precision** (~0.5), y compris hors
+refus : une partie des documents récupérés (k=5) n'est pas toujours pertinente pour la
+question posée — piste d'amélioration détaillée en section 8. Ce score est aussi le plus
+instable d'une exécution à l'autre, à interpréter avec prudence.
 
 ---
 
@@ -437,7 +449,7 @@ pertinente pour la question posée — piste d'amélioration détaillée en sect
 
 - **Volumétrie** : périmètre volontairement restreint à la Moselle pour le POC
   (1482 événements, 1918 chunks) — pas testé à plus grande échelle.
-- **Performance** : `context_precision` (~0.66) indique qu'une part des documents
+- **Performance** : `context_precision` (~0.5) indique qu'une part des documents
   récupérés n'est pas optimale ; pas d'optimisation de `k` ni de reranking à ce stade.
 - **Coût** : `mistral-small-latest` reste peu coûteux à l'usage, mais le tier gratuit
   de l'API Mistral s'est montré très limité en débit (429 rencontrés en développement) —
