@@ -342,19 +342,19 @@ fois** au démarrage du serveur (`lifespan`), jamais rechargés à chaque requê
 Requête :
 
 ```json
-{ "question": "Quels concerts de musique à Metz ce week-end ?" }
+{ "question": "Quels concerts de musique à Strasbourg samedi 3 octobre 2026 ?" }
 ```
 
 Réponse :
 
 ```json
 {
-  "answer": "Voici les concerts à Metz ce dimanche 21 juin : ...",
+  "answer": "Voici les concerts à Strasbourg le samedi 3 octobre 2026 : ...",
   "sources": [
     {
-      "title": "Concerts Place de la Comédie - Metz",
-      "dates": "Dimanche 21 juin, 17h00",
-      "city": "Metz",
+      "title": "Concert à Strasbourg : ...",
+      "dates": "Samedi 3 octobre, 20h00",
+      "city": "Strasbourg",
       "url": "https://openagenda.com/fetedelamusique2026/events/..."
     }
   ]
