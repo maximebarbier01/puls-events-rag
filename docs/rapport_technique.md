@@ -476,6 +476,16 @@ indulgent.
   comportement est le plus juste pour l'utilisateur (une ville demandée = uniquement cette
   ville). Le prompt système n'est pas modifié (voir section 4 : les enrichissements testés
   avaient dégradé la fidélité) ; le sur-refus du générateur est documenté comme limite principale.
+- **Générateur plus fort : sans effet.** Pour vérifier que le sur-refus vient bien de la
+  taille du modèle, nous avons remplacé `mistral-small-latest` par `mistral-medium-latest` pour
+  la seule génération (juge Ragas, données, retrieval et prompt inchangés, 3 exécutions) :
+  faithfulness 0.55 (0.54–0.57), answer relevancy 0.42 (0.40–0.46), context precision 0.36
+  (0.31–0.39), context recall 0.55 (0.52–0.56), soit des scores équivalents ou légèrement
+  inférieurs à ceux de `mistral-small` (0.51 / 0.55 / 0.38 / 0.60). Le modèle plus large répond
+  même « aucun … » un peu plus souvent (37 réponses de type refus sur 42, contre 30, comptage
+  approximatif par mots-clés). Le sur-refus tient donc plus vraisemblablement à la consigne de
+  refus du prompt face à un contexte bruité qu'à la taille du modèle ; `mistral-small` est conservé
+  (coût et débit).
 - **Essai écarté** : préfixer chaque chunk « orphelin » (suite d'une description longue) du
   titre, de la ville et des dates dégradait toutes les métriques. Cet essai avait été mené
   avant la correction du filtre (voir ci-dessous) et n'a pas été rejoué ; le code a été retiré.
@@ -537,8 +547,9 @@ refus justifiées : c'est une limite de la métrique, pas du système.
   situer « demain » ou « ce week-end » et d'écarter les événements passés. À évaluer
   avec la même méthode A/B que l'enrichissement du prompt, car un ajout apparemment
   anodin peut coûter en fidélité (voir section 4).
-- **Générateur plus fort** : tester un modèle plus large que `mistral-small` pour réduire le
-  sur-refus, à mesurer avec le même protocole (3 exécutions, même snapshot).
+- **Consigne de refus et contexte** : `mistral-medium` n'ayant pas réduit le sur-refus
+  (section 7), la piste restante est de retravailler la règle de refus du prompt ou de filtrer
+  le contexte avant génération, à mesurer avec la même méthode A/B que section 4.
 - **Reranking et meilleurs embeddings** : `k` (5 → 10) et le filtre par ville ont déjà été
   mesurés ; le levier restant est le classement à l'intérieur d'une ville, par un reranker
   ou un modèle d'embedding plus fort (Mistral Embed, écarté ici pour le coût, voir section 4).
