@@ -35,24 +35,15 @@ jobs:
       - name: Installation des dépendances
         run: poetry install --with eval
 
-      # 4. Reconstitution des données et de l'index à partir de zéro (pas de cache,
-      # pour rester simple — ça ajoute quelques minutes au run)
-      - name: Récupération des données Open Agenda
-        run: poetry run python scripts/00-fetch_openagenda.py
-
-      - name: Nettoyage des données
-        run: poetry run python scripts/01-preprocess.py
-
-      - name: Construction de l'index FAISS
-        run: poetry run python scripts/02-build_index.py
-
-      # 5. Évaluation du système RAG avec Ragas (vrais appels à l'API Mistral)
+      # 4. Évaluation du système RAG avec Ragas (vrais appels à l'API Mistral).
+      # Elle tourne sur le snapshot figé eval/snapshot/ : aucun appel à Open Agenda, l'index
+      # est reconstruit en mémoire par le script lui-même.
       - name: Évaluation Ragas
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: poetry run python scripts/04-evaluate_rag.py
 
-      # 6. Publication du détail des scores comme artefact du run
+      # 5. Publication du détail des scores comme artefact du run
       - name: Publication des résultats
         uses: actions/upload-artifact@v4
         with:

@@ -86,9 +86,9 @@ def test_model_refuses_to_invent_a_brownie_recipe(real_vectorstore, real_llm):
 
 
 def test_model_does_not_invent_an_event_it_does_not_have(real_vectorstore, real_llm):
-    """Question sur un événement hors périmètre (ville hors Moselle) : le modèle ne
+    """Question sur un événement hors périmètre (ville hors Grand Est) : le modèle ne
     doit pas prétendre avoir un vrai concert à Lyon alors que le corpus ne couvre que
-    la Moselle."""
+    le Grand Est."""
     result = answer_question(
         real_vectorstore, real_llm, "Quels concerts sont prévus à Lyon ce week-end ?"
     )

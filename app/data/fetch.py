@@ -35,12 +35,19 @@ def _flatten_coordinates(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_events(
-    department: str,
+    zone_value: str,
+    zone_field: str = "location_region",
     min_last_date: str | None = None,
     page_size: int = PAGE_SIZE,
 ) -> pd.DataFrame:
-    """Parcourt l'API Explore pour un service, en limitant éventuellement la recherche par date."""
-    where = f'location_department="{department}"'
+    """Parcourt l'API Explore pour une zone géographique (région par défaut, ou
+    département avec zone_field="location_department"), en limitant éventuellement
+    la recherche aux événements dont la dernière date est postérieure à min_last_date.
+
+    L'API plafonne offset + limit à 10 000 résultats par requête : largement suffisant
+    pour la région Grand Est (environ 2 700 événements à venir).
+    """
+    where = f'{zone_field}="{zone_value}"'
     if min_last_date:
         where += f" AND lastdate_end >= date'{min_last_date}'"
 

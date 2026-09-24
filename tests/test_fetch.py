@@ -11,7 +11,7 @@ def _record(uid: str, lat: float | None = 49.1, lon: float | None = 6.2) -> dict
     return {
         "uid": uid,
         "title_fr": f"Événement {uid}",
-        "location_department": "Moselle",
+        "location_region": "Grand Est",
         "location_coordinates": {"lat": lat, "lon": lon} if lat is not None else None,
     }
 
@@ -34,7 +34,7 @@ def test_fetch_events_paginates_until_total_count_reached():
     with patch("app.data.fetch.requests.get") as mock_get, patch("app.data.fetch.time.sleep"):
         mock_get.side_effect = [_response(page_1, 130), _response(page_2, 130)]
 
-        df = fetch_events(department="Moselle")
+        df = fetch_events("Grand Est")
 
     assert len(df) == 130
     assert mock_get.call_count == 2
@@ -43,22 +43,32 @@ def test_fetch_events_paginates_until_total_count_reached():
     assert "location_lat" in df.columns and "location_lon" in df.columns
 
 
-def test_fetch_events_passes_department_and_date_filter_in_where_clause():
+def test_fetch_events_filters_on_region_by_default_and_on_date():
     with patch("app.data.fetch.requests.get") as mock_get, patch("app.data.fetch.time.sleep"):
         mock_get.return_value = _response([_record("1")], 1)
 
-        fetch_events(department="Moselle", min_last_date="2025-09-17")
+        fetch_events("Grand Est", min_last_date="2026-09-25")
 
     where_clause = mock_get.call_args.kwargs["params"]["where"]
-    assert 'location_department="Moselle"' in where_clause
-    assert "2025-09-17" in where_clause
+    assert 'location_region="Grand Est"' in where_clause
+    assert "lastdate_end >= date'2026-09-25'" in where_clause
+
+
+def test_fetch_events_can_filter_on_another_zone_field():
+    with patch("app.data.fetch.requests.get") as mock_get, patch("app.data.fetch.time.sleep"):
+        mock_get.return_value = _response([_record("1")], 1)
+
+        fetch_events("Moselle", zone_field="location_department")
+
+    where_clause = mock_get.call_args.kwargs["params"]["where"]
+    assert where_clause == 'location_department="Moselle"'
 
 
 def test_fetch_events_stops_on_empty_page_even_if_total_count_says_otherwise():
     with patch("app.data.fetch.requests.get") as mock_get, patch("app.data.fetch.time.sleep"):
         mock_get.side_effect = [_response([_record("1")], 999), _response([], 999)]
 
-        df = fetch_events(department="Moselle")
+        df = fetch_events("Grand Est")
 
     assert len(df) == 1
     assert mock_get.call_count == 2
