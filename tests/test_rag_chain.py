@@ -75,6 +75,19 @@ def test_system_prompt_instructs_the_model_to_refuse_when_context_does_not_match
     assert "invente" in prompt_lower
 
 
+def test_prompt_formats_without_error_and_keeps_context_and_question():
+    """SYSTEM_PROMPT passe dans un ChatPromptTemplate : une accolade égarée (par
+    exemple dans un exemple JSON) ferait planter chaque requête. On vérifie que le
+    formatage réel fonctionne et que contexte et question arrivent bien au modèle."""
+    from app.rag.chain import PROMPT
+
+    messages = PROMPT.format_messages(context="Événement X — Metz", question="Quoi à Metz ?")
+
+    assert messages[0].content == SYSTEM_PROMPT
+    assert "Événement X — Metz" in messages[1].content
+    assert "Quoi à Metz ?" in messages[1].content
+
+
 def test_answer_question_does_not_crash_on_unrelated_query(sample_df, fake_embeddings):
     documents = to_documents(sample_df)
     vectorstore = build_index(documents, fake_embeddings)
