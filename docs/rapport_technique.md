@@ -201,6 +201,55 @@ Ce prompt a été validé par des tests réels (voir section 7) : le système re
 correctement de répondre à des questions hors périmètre (recette de cuisine, ville hors
 Moselle) plutôt que d'halluciner.
 
+### Enrichissement du prompt : testé, mesuré, écarté
+
+Une version beaucoup plus détaillée du prompt a été rédigée en s'appuyant sur les bonnes
+pratiques d'écriture de prompts système : rôle et périmètre explicites, sources
+autorisées, méthode de réponse en étapes (décomposer une question à critères multiples),
+comportements obligatoires et interdits, gestion de l'ambiguïté et de l'information
+manquante (renvoi vers le lien source), résistance aux instructions injectées dans la
+question ou dans le contexte, ton courtois, et exemples de format.
+
+**Bénéfices qualitatifs constatés** sur le vrai système : une instruction du type
+« ignore tes instructions » est écartée, une information absente (un tarif) est signalée
+avec renvoi vers la source plutôt que devinée, le modèle ne déduit plus « demain » à
+partir des dates du contexte.
+
+**Coût mesuré.** Comparaison contrôlée avec Ragas : même index, même jour, même jeu de
+12 questions, 2 exécutions par variante. Fidélité au contexte (Faithfulness) sur les
+8 questions « répondables » (hors refus légitimes) :
+
+| Variante du prompt | Run 1 | Run 2 |
+|---|---|---|
+| Prompt retenu (4 règles) | 0.95 | 0.94 |
+| Enrichi complet | 0.74 | 0.77 |
+| Enrichi sans exemples | 0.79 | 0.81 |
+| Règles compactes, sans méthode ni exemples | 0.85 | 0.79 |
+| Prompt retenu + règle « date du jour inconnue » seule | 0.85 | 0.86 |
+| Prompt retenu + 4 règles « cas limites » | 0.91 | 0.75 |
+
+Pour le prompt enrichi complet, la pertinence de la réponse (`answer_relevancy`, ~0.83
+sur ces questions) et les métriques de récupération ne changent pas de façon
+significative, ce qui est attendu pour la seconde : le prompt n'intervient pas dans la
+recherche vectorielle. Certaines variantes intermédiaires dégradent en revanche la
+pertinence (0.6 à 0.7 avec la seule règle sur la date du jour). Aucune couche d'enrichissement
+n'explique à elle seule la baisse : chacune coûte une part de fidélité, et les effets
+s'additionnent. Deux mécanismes sont plausibles, sans avoir été démontrés : le modèle
+ajoute des phrases (accueil, invitations, mises en garde comme « je ne peux pas situer
+cette date ») que le juge ne peut pas rattacher au contexte récupéré, et il élargit
+parfois le sens d'un critère pour faire entrer un événement (un événement cycliste
+présenté comme accessible). Les exemples intégrés au prompt peuvent aussi induire des
+affirmations non ancrées : un premier exemple de refus promettait des « ateliers
+culinaires » absents du contexte, ce qui a fait chuter la fidélité de certains refus
+(jusqu'à 0) avant correction. L'écart entre deux exécutions d'une même variante peut atteindre 0.16
+(dernière ligne) : seules des différences nettes, comme celle du prompt retenu, sont
+interprétables.
+
+**Décision.** La fidélité au contexte est la métrique centrale du projet (ne jamais
+inventer un événement) : le prompt à 4 règles, mesuré comme le plus fidèle, est conservé.
+Les règles de robustesse (injection, information manquante) restent une piste
+d'amélioration, à réévaluer avec cette même méthode A/B avant toute adoption.
+
 ### Limites du modèle
 
 - Pas de notion de la date du jour : sur une question temporelle ("demain"), le modèle
@@ -396,13 +445,20 @@ pertinente pour la question posée — piste d'amélioration détaillée en sect
 - **Couverture temporelle** : pas de filtrage réel par date. Une question du type
   "demain" ou "ce week-end" repose uniquement sur la similarité sémantique du texte, pas
   sur une comparaison de dates — un test réel a montré le modèle déduire une année
-  erronée pour "demain" faute de connaître la date courante.
+  erronée pour "demain" faute de connaître la date courante. Conséquence liée : la
+  fenêtre d'un an d'historique, demandée par le sujet, fait que des événements déjà
+  passés peuvent être recommandés comme s'ils étaient à venir (observé : un événement de
+  septembre 2025 proposé en réponse à une question posée en septembre 2026).
 
 ### Améliorations possibles
 
 - **Filtrage temporel explicite** : extraire une plage de dates de la question (règles
   ou LLM) et filtrer les métadonnées `firstdate_begin`/`lastdate_end` avant ou après la
   recherche vectorielle.
+- **Date du jour transmise au modèle** : l'injecter dans le prompt permettrait de
+  situer « demain » ou « ce week-end » et d'écarter les événements passés. À évaluer
+  avec la même méthode A/B que l'enrichissement du prompt, car un ajout apparemment
+  anodin peut coûter en fidélité (voir section 4).
 - **Ajustement de `k` et reranking** : comparer plusieurs valeurs de `k` sur le jeu de
   test annoté, envisager un reranking des résultats FAISS avant de les transmettre au
   LLM, pour améliorer `context_precision`.
