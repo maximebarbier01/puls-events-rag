@@ -40,9 +40,10 @@ Démontrer trois choses aux équipes produit et marketing :
 
 ### Périmètre
 
-- **Zone géographique** : département de la Moselle (Grand Est).
-- **Période** : un an d'historique, plus tous les événements à venir (pas de plafond
-  dans le futur).
+- **Zone géographique** : région Grand Est.
+- **Période** : uniquement les événements **à venir ou en cours** (`lastdate_end` ≥ date
+  du jour). Le sujet recommandait d'ajouter un an d'historique : nous nous en écartons
+  volontairement, sur une mesure (voir section 3).
 - **Données** : événements publics issus du jeu de données Open Agenda, filtrés pour ne
   garder que les événements culturels (voir section 3).
 
@@ -99,31 +100,47 @@ Les événements sont récupérés via l'API Explore v2.1 d'OpenDataSoft
 (`app/data/fetch.py`, `scripts/00-fetch_openagenda.py`), avec un filtre ODSQL :
 
 ```
-where=location_department="Moselle" AND lastdate_end >= date'<aujourd'hui - 365 jours>'
+where=location_region="Grand Est" AND lastdate_end >= date'<aujourd'hui>'
 ```
 
 La pagination se fait par blocs de 100 (limite de l'API), jusqu'à récupération complète
-(`total_count`). Au 19/09/2026, ce filtre renvoie **2829 événements bruts**.
+(`total_count`). Au 24/09/2026, ce filtre renvoie **2682 événements bruts**.
+
+**Pourquoi « à venir uniquement », et pas un an d'historique ?** Une première version
+suivait la recommandation du sujet (un an d'historique + événements à venir) sur la
+Moselle. Une mesure sur le corpus indexé a montré que **1393 des 1484 événements (94 %)
+étaient déjà terminés** : le jeu de données Open Agenda ne contient qu'environ 3 % d'événements
+à venir (à l'échelle nationale, 3,7 %), l'historique noyait donc l'à-venir et le chatbot
+recommandait du passé (ex. des Journées du patrimoine 2025 proposées en septembre 2026).
+Pour une plateforme de recommandation, un événement terminé n'a pas de valeur : nous
+avons retenu « à venir uniquement ». Cette période ne laissait que 279 événements à venir en
+Moselle seule (dont 155 sessions France Travail), ce qui a conduit à élargir la zone au
+**Grand Est** (2682 événements à venir).
 
 ### Nettoyage
 
 Le nettoyage (`app/data/preprocessing.py`) applique successivement :
 
-1. **Filtre de récence** — `lastdate_end >= aujourd'hui - 365 jours`, sans plafond
-   futur (reprend la recommandation du sujet : "1 an d'historique et événements à
-   venir").
-2. **Filtre de statut** — exclusion des événements annulés (`status.id == 6`) ; les
+1. **Filtre de statut** — exclusion des événements annulés (`status.id == 6`) ; les
    événements complets sont conservés mais signalés (`is_full`).
-3. **Filtre thématique** — découverte faite en cours de développement :
-   `location_department="Moselle"` seul renvoie des données non-culturelles (sessions
-   de recrutement France Travail, agriculture, cyclisme promotionnel...). Une liste
-   explicite de 12 sources (`EXCLUDED_ORIGINAGENDA_TITLES`) est exclue — dont les
-   sessions "Mes événements France Travail", qui représentent à elles seules près de
-   44% du volume brut (1236 sur 2829 événements).
-4. **Nettoyage HTML** — les descriptions longues contiennent des balises (`<p>`,
+2. **Filtre thématique** — le jeu de données brut mêle des sources non culturelles
+   (sessions de recrutement France Travail, catalogues d'hébergement, chambres
+   d'agriculture, semaines thématiques d'entreprises...). Une liste explicite de titres
+   d'agendas (`EXCLUDED_ORIGINAGENDA_TITLES`, 21 entrées) et un préfixe
+   (« Catalogue départemental des structures… ») sont exclus. Les sessions « Mes
+   événements France Travail » représentent à elles seules 1334 des 2682 événements bruts
+   (50 %). La liste résulte d'une revue manuelle des 91 agendas du Grand Est ayant des
+   événements à venir : quelques choix sont des jugements (agendas de spéléologie,
+   parentalité et santé exclus ; EcoNature conservé).
+3. **Filtre « à venir »** — `lastdate_end` ≥ date de référence (`HISTORY_DAYS = 0`) ;
+   les dates hors bornes de pandas sont ignorées plutôt que de faire échouer le pipeline.
+4. **Titre et contenu non vides** — 38 événements sans titre français sont écartés.
+5. **Nettoyage HTML** — les descriptions longues contiennent des balises (`<p>`,
    `<br>`), retirées via BeautifulSoup.
 
-Après ces filtres : **1482 événements culturels propres**.
+Entonnoir au 24/09/2026 : 2682 événements bruts → 1134 après filtre de statut et filtre
+thématique → 1133 après filtre « à venir » → **1061 événements culturels propres** après
+suppression des événements sans titre (l'index de production du même jour en compte 1059, deux événements s'étant terminés entre-temps).
 
 ### Chunking
 
@@ -134,7 +151,7 @@ description, mots-clés, conditions, accessibilité), puis découpé avec un
 Ce dimensionnement a été choisi après analyse de la distribution des longueurs de texte
 (médiane : 479 caractères) : la grande majorité des événements tient dans un seul
 chunk, le découpage ne servant qu'à traiter la queue longue (quelques événements
-dépassant 1000 caractères). Résultat : **1918 chunks** indexés.
+dépassant 1000 caractères). Résultat : **1779 chunks** indexés (index de production, 1059 événements).
 
 ### Embedding
 
@@ -199,9 +216,11 @@ clairement plutôt que d'inventer une réponse.
 
 Ce prompt a été validé par des tests réels (voir section 7) : le système refuse
 correctement de répondre à des questions hors périmètre (recette de cuisine, ville hors
-Moselle) plutôt que d'halluciner.
+Grand Est) plutôt que d'halluciner.
 
 ### Enrichissement du prompt : testé, mesuré, écarté
+
+> Cette expérience a été menée sur la première version du corpus (Moselle, un an d'historique, k=5) ; ses scores ne sont pas comparables à ceux de la section 7, mais la comparaison A/B, faite à corpus et jeu de test identiques, reste valide.
 
 Une version beaucoup plus détaillée du prompt a été rédigée en s'appuyant sur les bonnes
 pratiques d'écriture de prompts système : rôle et périmètre explicites, sources
@@ -294,6 +313,18 @@ dans les réponses de l'API, sans avoir à re-parser le texte brut.
 
 ---
 
+### Recherche : k=10 et filtre par ville
+
+La chaîne (`app/rag/chain.py`) récupère les **k=10** chunks les plus proches. Si la
+question cite une ville présente dans l'index, la recherche est **restreinte à cette ville**
+(`detect_city` : correspondance de mots entiers, sans tenir compte de la casse ni des
+accents, noms les plus longs d'abord). Sans ville détectée, ou si la ville n'a aucun
+événement, la recherche reste purement sémantique. FAISS appliquant le filtre après avoir
+récupéré ses `fetch_k` voisins, `fetch_k` est fixé à la taille de l'index. Ces choix
+résultent des essais mesurés en section 7.
+
+---
+
 ## 6. API et endpoints exposés
 
 ### Framework
@@ -369,21 +400,32 @@ déterministes injectés via les dépendances FastAPI).
 
 ### Jeu de test annoté
 
-12 questions avec réponses de référence (`eval/qa_dataset.json`), couvrant :
+14 questions avec réponses de référence (`eval/qa_dataset.json`), toutes **à dates
+explicites** (« en octobre 2026 », « le samedi 10 octobre 2026 ») pour rester valables
+dans le temps :
 
-- des questions factuelles simples ("Quel musée visiter en ce mois de septembre à
-  Metz ?"),
-- des questions à critères combinés ("Quels événements accessibles aux personnes à
-  mobilité réduite en Moselle ?"),
-- des questions ouvertes ("Recommande-moi une sortie culturelle originale."),
-- des questions **pièges**, volontairement hors périmètre géographique ou thématique
-  ("Quels concerts à Paris ce week-end ?", "Quelle est la recette du brownie au
-  chocolat ?"), pour vérifier que le système refuse de répondre plutôt que d'inventer.
+- 9 questions « type + ville » (concerts à Strasbourg ou Nancy, expositions à
+  Bar-le-Duc ou Reims, ateliers, visites et contes à Colmar, conférences à Reims, film
+  à Mulhouse),
+- 2 questions à critères combinés (événements gratuits à Strasbourg un jour donné,
+  événements accessibles aux personnes à mobilité réduite),
+- 1 question dont la bonne réponse est l'absence (concerts à Metz le 3 octobre : Metz
+  a 6 événements ce jour-là, dont aucun concert),
+- 2 questions **pièges**, hors périmètre géographique ou thématique (concerts à Paris,
+  recette de brownie), pour vérifier que le système refuse plutôt qu'inventer.
 
-**Méthode d'annotation** : les réponses de référence ont été construites à partir de
-réponses réellement produites par le système sur les vraies données, relues et
-validées manuellement — pas générées indépendamment du système, ce qui garantit
-qu'elles sont factuellement ancrées dans le corpus réel.
+**Méthode d'annotation** : les réponses de référence sont construites **mécaniquement
+depuis les données**, par des filtres pandas (ville, type d'événement lu dans le titre et
+les mots-clés en mots entiers, période, mention « gratuit » ou « handicap moteur »),
+jamais à partir des sorties du système (`eval/build_references.py`, rejouable). Une
+première version du jeu de test, bâtie sur des réponses du système relues à la main, avait
+un défaut : elle ne pouvait pas révéler les événements que le système ne trouvait pas.
+
+**Snapshot figé** : les événements à venir périment chaque jour, l'évaluation est donc
+faite sur un instantané versionné du Grand Est daté du 24/09/2026
+(`eval/snapshot/`, 2682 événements bruts, 1061 après nettoyage), dont l'index est
+reconstruit en mémoire à chaque évaluation. Les scores sont ainsi reproductibles et
+indépendants d'Open Agenda.
 
 ### Métriques d'évaluation
 
@@ -399,38 +441,55 @@ wrappers `LangchainLLMWrapper`/`LangchainEmbeddingsWrapper` :
 
 ### Résultats obtenus
 
-Moyenne de 3 exécutions consécutives, sur l'index courant (1918 chunks) et le même jeu
-de 12 questions. Le juge Ragas étant lui-même un LLM, les scores varient d'une
-exécution à l'autre : sur ces 3 exécutions, Faithfulness 0.88 à 0.96, Answer relevancy
-0.61 à 0.62, Context precision 0.47 à 0.54, Context recall 0.81 à 0.86 (score global).
+Moyenne de 3 exécutions consécutives par variante, sur le snapshot figé et le même jeu de
+14 questions. Le juge Ragas étant lui-même un LLM (le même modèle Mistral que le générateur : biais
+d'auto-évaluation possible), les scores varient d'une exécution à l'autre. Nous avons comparé
+trois variantes du retrieval, sans toucher au prompt :
 
-| Métrique | Score global (12 questions) | Hors refus (8 questions) |
-|---|---|---|
-| Faithfulness | 0.92 | 0.94 |
-| Answer relevancy | 0.61 | 0.82 |
-| Context precision | 0.50 | 0.50 |
-| Context recall | 0.82 | 0.86 |
+| Variante | Faithfulness | Answer relevancy | Context precision | Context recall |
+|---|---|---|---|---|
+| k=5, sans filtre | 0.66 (0.66–0.67) | 0.51 (0.48–0.54) | 0.29 (0.27–0.31) | 0.46 (0.44–0.49) |
+| k=10, sans filtre | **0.82** (0.76–0.87) | **0.71** (0.66–0.73) | 0.29 (0.27–0.31) | 0.45 (0.38–0.52) |
+| **k=10 + filtre ville (retenue)** | 0.51 (0.44–0.64) | 0.55 (0.52–0.59) | **0.38** (0.36–0.42) | **0.60** (0.57–0.64) |
 
-La colonne « hors refus » exclut les 4 questions dont la bonne réponse est de refuser
-ou de constater une absence : brownie, Rougail saucisse, concerts à Paris, « demain ».
+(moyenne, puis min–max des 3 exécutions.) Ces scores **ne sont pas comparables** à ceux de la
+première version du rapport (faithfulness 0.92, context precision 0.50) : le corpus, la zone et surtout
+le jeu de test ont changé, et l'ancien jeu, bâti sur les sorties du système, était plus
+indulgent.
 
-**Analyse qualitative** : sur ces questions, le système **répond correctement en
-refusant**, mais deux métriques le sanctionnent mécaniquement.
-- `answer_relevancy` tombe à 0 sur les trois refus classiques (brownie, Rougail, Paris) :
-  elle compare, par similarité sémantique, la question posée à des questions reconstruites
-  à partir de la réponse, et un refus court ("Aucun événement... ne propose de recette")
-  ne "ressemble" pas à la question initiale.
-- `context_recall` tombe à 0 sur « demain » : la réponse de référence affirme une
-  absence d'événement, qu'aucun passage du contexte récupéré ne peut "prouver".
+**Lecture des résultats**
 
-Ce sont des limites connues des métriques elles-mêmes, pas un défaut de fonctionnement
-du système : recalculée sur les seules questions "répondables", `answer_relevancy`
-remonte à 0.82.
+- Doubler k (5 → 10) fait remonter fortement faithfulness et answer relevancy : avec plus
+  de contexte, le modèle refuse moins souvent à tort (« aucun événement dans le
+  contexte »). Le rappel ne bouge pas : les bons événements ne remontent pas davantage.
+- Le filtre par ville améliore nettement le **retrieval** : rappel 0.45 → 0.60, précision
+  0.29 → 0.38. Les contextes viennent de la bonne ville et contiennent plus souvent les
+  événements attendus (le concert de Strasbourg est retrouvé à chaque exécution).
+- En contrepartie, faithfulness et answer relevancy reculent par rapport à k=10 seul. Le
+  détail par question montre que la cause est **côté génération, pas côté retrieval** : sur 7
+  questions sur 14, `mistral-small` répond « aucun … dans le contexte fourni ». Ragas note
+  ces réponses à 0 en fidélité. Une partie de ces refus est une **erreur du modèle** : à Nancy
+  (rappel 0.67, précision 1.0) et à Bar-le-Duc (rappel 0.89), l'événement attendu est dans le
+  contexte et le modèle le déclare absent. Une autre partie est un **artefact de la métrique** :
+  à Metz, la bonne réponse est justement « aucun concert », et elle est pourtant notée 0.
+- Nous retenons **k=10 + filtre ville** : c'est le meilleur retrieval mesuré, et son
+  comportement est le plus juste pour l'utilisateur (une ville demandée = uniquement cette
+  ville). Le prompt système n'est pas modifié (voir section 4 : les enrichissements testés
+  avaient dégradé la fidélité) ; le sur-refus du générateur est documenté comme limite principale.
+- **Essai écarté** : préfixer chaque chunk « orphelin » (suite d'une description longue) du
+  titre, de la ville et des dates dégradait toutes les métriques. Cet essai avait été mené
+  avant la correction du filtre (voir ci-dessous) et n'a pas été rejoué ; le code a été retiré.
+- **Bug corrigé en cours de route** : Open Agenda contient « Strasbourg » (107 événements) et
+  « STRASBOURG » (3) ; un premier filtre par ville n'en retenait qu'une graphie, et la commune
+  de Grand (Vosges) était confondue avec « Grand Est ». Les deux ont été corrigés
+  (comparaison sans casse, nom de région écarté) et couverts par des tests ; les chiffres
+  ci-dessus sont ceux du filtre corrigé.
 
-Le point faible réel identifié est le **context precision** (~0.5), y compris hors
-refus : une partie des documents récupérés (k=5) n'est pas toujours pertinente pour la
-question posée — piste d'amélioration détaillée en section 8. Ce score est aussi le plus
-instable d'une exécution à l'autre, à interpréter avec prudence.
+**Limites identifiées** : (1) le classement sémantique de MiniLM **à l'intérieur d'une ville**
+reste imparfait (Strasbourg compte 107 événements) et la période (« en octobre 2026 ») n'est pas
+filtrée ; (2) le générateur refuse trop souvent quand le contexte est bruité. Comme dans la
+première version, `answer_relevancy` tombe aussi mécaniquement à 0 sur certaines réponses de
+refus justifiées : c'est une limite de la métrique, pas du système.
 
 ---
 
@@ -447,20 +506,27 @@ instable d'une exécution à l'autre, à interpréter avec prudence.
 
 ### Limites du POC
 
-- **Volumétrie** : périmètre volontairement restreint à la Moselle pour le POC
-  (1482 événements, 1918 chunks) — pas testé à plus grande échelle.
-- **Performance** : `context_precision` (~0.5) indique qu'une part des documents
-  récupérés n'est pas optimale ; pas d'optimisation de `k` ni de reranking à ce stade.
+- **Volumétrie** : périmètre volontairement restreint au Grand Est pour le POC
+  (1059 événements, 1779 chunks) — pas testé à plus grande échelle.
+- **Performance** : rappel 0.60 et précision 0.38 sur le jeu de test (section 7) ; le
+  classement à l'intérieur d'une ville reste imparfait, aucun reranking n'est en place, et
+  `mistral-small` refuse parfois à tort (fidélité 0.51) alors que le bon événement est dans
+  le contexte.
+- **Corpus qui périme chaque jour** : ne contenant que des événements à venir, l'index
+  se dégrade au fil des jours (des événements se terminent). Il faut le reconstruire
+  régulièrement (`00-fetch` → `01-preprocess` → `02-build_index`, sans clé API), par
+  exemple chaque nuit en production.
+- **Villes détectées par correspondance de noms** : une ville au nom courant ou une
+  question sans ville explicite retombent sur la recherche sémantique seule.
 - **Coût** : `mistral-small-latest` reste peu coûteux à l'usage, mais le tier gratuit
   de l'API Mistral s'est montré très limité en débit (429 rencontrés en développement) —
   un usage en production nécessiterait un plan payant dimensionné au trafic réel.
-- **Couverture temporelle** : pas de filtrage réel par date. Une question du type
-  "demain" ou "ce week-end" repose uniquement sur la similarité sémantique du texte, pas
-  sur une comparaison de dates — un test réel a montré le modèle déduire une année
-  erronée pour "demain" faute de connaître la date courante. Conséquence liée : la
-  fenêtre d'un an d'historique, demandée par le sujet, fait que des événements déjà
-  passés peuvent être recommandés comme s'ils étaient à venir (observé : un événement de
-  septembre 2025 proposé en réponse à une question posée en septembre 2026).
+- **Couverture temporelle** : pas de filtrage par date au moment de la recherche. Une
+  question du type "demain", "ce week-end" ou "en octobre 2026" repose uniquement sur la
+  similarité sémantique du texte, pas sur une comparaison de dates — un test réel a montré
+  le modèle déduire une année erronée pour "demain" faute de connaître la date courante.
+  Le corpus ne contenant que des événements à venir, le risque de recommander du passé est
+  limité à ceux qui se terminent entre deux reconstructions de l'index.
 
 ### Améliorations possibles
 
@@ -471,12 +537,14 @@ instable d'une exécution à l'autre, à interpréter avec prudence.
   situer « demain » ou « ce week-end » et d'écarter les événements passés. À évaluer
   avec la même méthode A/B que l'enrichissement du prompt, car un ajout apparemment
   anodin peut coûter en fidélité (voir section 4).
-- **Ajustement de `k` et reranking** : comparer plusieurs valeurs de `k` sur le jeu de
-  test annoté, envisager un reranking des résultats FAISS avant de les transmettre au
-  LLM, pour améliorer `context_precision`.
-- **Extension géographique** : le pipeline n'a pas de dépendance à la Moselle
-  spécifiquement (paramètre de département dans `app/data/fetch.py`) — extensible à
-  d'autres zones sans changement d'architecture.
+- **Générateur plus fort** : tester un modèle plus large que `mistral-small` pour réduire le
+  sur-refus, à mesurer avec le même protocole (3 exécutions, même snapshot).
+- **Reranking et meilleurs embeddings** : `k` (5 → 10) et le filtre par ville ont déjà été
+  mesurés ; le levier restant est le classement à l'intérieur d'une ville, par un reranker
+  ou un modèle d'embedding plus fort (Mistral Embed, écarté ici pour le coût, voir section 4).
+- **Extension géographique** : le pipeline n'a pas de dépendance au Grand Est
+  spécifiquement (champ et valeur de zone paramétrables dans `app/data/fetch.py`) —
+  extensible à d'autres régions sans changement d'architecture.
 - **Déploiement élargi** : le POC est conteneurisé et démontré localement (Docker), mais
   n'est pas déployé sur une infrastructure cloud à ce stade — étape naturelle suivante
   si le POC est validé.
@@ -499,7 +567,7 @@ puls-events-rag/
 │   ├── raw/               # données brutes Open Agenda (non versionné, régénérable)
 │   └── interim/           # données nettoyées prêtes à l'indexation (non versionné, régénérable)
 ├── index/                 # index vectoriel FAISS (non versionné, régénérable)
-├── eval/                 # jeu de questions/réponses annoté + résultats Ragas
+├── eval/                 # jeu de test annoté, script de construction des références, snapshot figé des données, résultats Ragas
 ├── docs/                 # ce rapport, la présentation PowerPoint
 ├── .github/workflows/     # CI (tests sur PR, évaluation Ragas sur push main)
 ├── Dockerfile, docker-compose.yml
@@ -521,8 +589,9 @@ réseau réels (voir `tests/conftest.py`, objets factices déterministes).
 
 ```json
 {
-  "question": "Quels concerts de musique à Metz ce week-end ?",
-  "reference_answer": "Voici les concerts à Metz ce dimanche 21 juin :\n\nPlace de la Comédie :\n- Lycée Georges de la Tour option musique : 17h30 (Pop)\n- Séga Vibes : 20h00 (Musique du monde)\n..."
+  "question": "Quels concerts à Nancy en octobre 2026 ?",
+  "reference_answer": "Voici les concerts à Nancy en octobre 2026 :\n- Concert à Nancy : Ravel, Debussy, Mozart, Vivaldi, Bach, Piazzolla, Cantemir, Doppler, Waxman — Vendredi 2 octobre, 20h00 — Eglise Saint-Sébastien, Nancy",
+  "n_expected_events": 1
 }
 ```
 

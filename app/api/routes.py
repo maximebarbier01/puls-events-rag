@@ -1,8 +1,8 @@
 """
 Routes de l'API : /ask (poser une question) et /rebuild (reconstruire l'index).
 
-La logique métier (RAG, preprocessing, indexation) n'est pas réécrite ici : on
-réutilise app.rag.chain et app.vectorstore.build, comme demandé par le sujet
+La logique métier (RAG, preprocessing, indexation) n'est pas réécrite ici :
+on réutilise app.rag.chain et app.vectorstore.build, comme demandé par le sujet
 ("séparez bien votre logique métier de votre code d'API").
 """
 

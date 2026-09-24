@@ -10,6 +10,8 @@ cohérent avec le reste du projet (pas de dépendance à un second fournisseur).
 from __future__ import annotations
 
 import json
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -26,13 +28,36 @@ from ragas.metrics import (
     LLMContextRecall,
 )
 
+from app.data.preprocessing import preprocess
 from app.rag.chain import answer_question
+from app.vectorstore.build import build_index, chunk_documents, to_documents
+
+# Snapshot figé des données Open Agenda (Grand Est, événements à venir à cette date) sur
+# lequel l'évaluation s'exécute TOUJOURS : les événements à venir périment chaque jour,
+# alors que les réponses de référence de eval/qa_dataset.json portent sur des événements
+# précis. Sans snapshot, les scores dériveraient de jour en jour sans que le système change.
+SNAPSHOT_FILENAME = "openagenda_grand-est_2026-09-24.parquet"
+SNAPSHOT_DATE = datetime(2026, 9, 24, tzinfo=timezone.utc)
 
 
 def load_qa_dataset(path: Path) -> list[dict]:
     """Charger le jeu de questions/réponses de référence (eval/qa_dataset.json)."""
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def build_snapshot_vectorstore(
+    snapshot_path: Path, snapshot_date: datetime, embeddings: Embeddings
+) -> VectorStore:
+    """Reconstruire, en mémoire, l'index FAISS du snapshot : nettoyage avec la date de
+    référence figée (pas la date du jour), chunking, vectorisation. Le pipeline est celui de
+    production (mêmes fonctions), seule la date de référence est figée."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        df = preprocess(
+            snapshot_path, Path(tmp_dir) / "events_clean.parquet", reference_date=snapshot_date
+        )
+    chunks = chunk_documents(to_documents(df))
+    return build_index(chunks, embeddings)
 
 
 def build_ragas_dataset(

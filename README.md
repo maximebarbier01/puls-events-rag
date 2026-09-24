@@ -1,8 +1,8 @@
 # Puls-Events RAG
 
 POC d'assistant intelligent capable de répondre à des questions sur des événements
-culturels à venir en Moselle, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
-combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel(Mistral), 
+culturels à venir dans le Grand Est, en s'appuyant sur un système RAG (Retrieval-Augmented Generation)
+combinant recherche vectorielle (FAISS) et génération de réponse en langage naturel (Mistral), 
 orchestré avec un framework (LangChain). Les événements proviennent de l'API
 [Open Agenda](https://data.opendatasoft.com/api/explore/v2.1/console).
 
@@ -33,26 +33,31 @@ Mission réalisée pour Puls-Events dans le cadre du projet OpenClassrooms
 
 ## Zone et période couvertes
 
-- **Zone géographique** : département de la Moselle (Grand Est), via le filtre
-  `location_department="Moselle"` de l'API Open Agenda.
-- **Fenêtre temporelle** : 1 an d'historique + tous les événements à venir (pas de
-  plafond dans le futur), soit `lastdate_end >= aujourd'hui - 365 jours`.
+- **Zone géographique** : région Grand Est, via le filtre `location_region="Grand Est"`
+  de l'API Open Agenda.
+- **Période** : uniquement les événements **à venir ou en cours**
+  (`lastdate_end >= aujourd'hui`). Le sujet recommandait un an d'historique en plus ; nous
+  l'avons écarté après avoir mesuré que 94 % des événements d'un corpus « 1 an d'historique »
+  étaient déjà terminés (voir le rapport technique, section 3).
 - **Filtre thématique** : les événements sont en plus filtrés pour exclure les sources
   non-culturelles présentes dans le jeu de données brut (ex : sessions de recrutement
   "France Travail", agriculture, cyclisme promotionnel...) — voir
   `EXCLUDED_ORIGINAGENDA_TITLES` dans [app/data/preprocessing.py](app/data/preprocessing.py).
 - **Statut** : les événements annulés sont exclus ; les événements complets sont gardés
   mais signalés (`is_full`).
-- Résultat : ~1439 événements culturels propres dans
-  `data/interim/events_clean.parquet` (à partir de 2829 lignes brutes récupérées via
-  `scripts/00-fetch_openagenda.py`).
+- Résultat (24/09/2026) : 2682 événements bruts → **1061 événements culturels propres** dans
+  `data/interim/events_clean.parquet`. Le corpus ne contenant que des événements à venir,
+  il **périme chaque jour** : reconstruisez-le (commandes ci-dessous, sans clé API) avant
+  toute démonstration.
+- **Recherche** : les 10 chunks les plus proches (`k=10`), restreints à la ville citée dans la
+  question quand il y en a une (`detect_city` dans [app/rag/chain.py](app/rag/chain.py)).
 
 ## Structure du projet
 
 ```text
 puls-events-rag/
 ├── app/                  # code applicatif (package Python)
-│   ├── api/              # routes FastAPI (/ask, /rebuild)
+│   ├── api/              # routes FastAPI (/health, /metadata, /ask, /rebuild)
 │   ├── core/             # configuration, clients (Mistral, etc.)
 │   ├── data/             # récupération + nettoyage Open Agenda
 │   ├── vectorstore/      # construction / chargement de l'index FAISS
@@ -63,7 +68,7 @@ puls-events-rag/
 │   ├── raw/               # données brutes Open Agenda (non versionné)
 │   └── interim/           # données nettoyées prêtes à l'indexation (non versionné)
 ├── index/                 # index vectoriel FAISS régénérable (non versionné)
-├── eval/                 # jeu de questions/réponses annoté
+├── eval/                 # jeu de test annoté, script de références, snapshot figé des données
 ├── docs/                 # rapport technique, présentation
 ├── pyproject.toml / poetry.lock   # dépendances (source de vérité)
 ├── requirements.txt / requirements-dev.txt  # export pour reproduction sans Poetry
@@ -141,7 +146,7 @@ client Mistral (voir le `lifespan` dans `app/main.py`) — ils ne sont jamais re
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "Quels concerts à Metz ce week-end ?"}'
+  -d '{"question": "Quels concerts à Strasbourg en octobre 2026 ?"}'
 ```
 
 **`POST /rebuild`** — reconstruire l'index (relit `data/raw`, renettoie, réindexe).
@@ -169,16 +174,23 @@ curl http://localhost:8000/metadata
 
 ## Évaluation (Ragas)
 
-Jeu de test annoté : [eval/qa_dataset.json](eval/qa_dataset.json) — 12 questions avec
-réponses de référence, incluant des cas limites volontaires (questions hors périmètre
-géographique/thématique) pour vérifier que le système refuse d'halluciner.
+Jeu de test annoté : [eval/qa_dataset.json](eval/qa_dataset.json) — 14 questions à dates
+explicites avec réponses de référence, dont 2 cas limites volontaires (hors périmètre
+géographique/thématique) pour vérifier que le système refuse d'halluciner. Les références
+sont construites **depuis les données** par des filtres pandas
+(`poetry run python -m eval.build_references`), jamais depuis les sorties du système.
+
+L'évaluation tourne sur un **snapshot figé** des données du 24/09/2026
+([eval/snapshot/](eval/snapshot/)) : les événements à venir périment chaque jour, les
+scores restent ainsi reproductibles. L'index du snapshot est reconstruit en mémoire à
+chaque exécution.
 
 ```bash
 poetry run python scripts/04-evaluate_rag.py
 ```
 
 Fait de vrais appels à l'API Mistral (génération + jugement des métriques) : coûte
-quelques dizaines de centimes, prend une à deux minutes. Ce n'est pas un test pytest
+quelques dizaines de centimes, prend quelques minutes (dont la vectorisation locale du snapshot). Ce n'est pas un test pytest
 (pas lancé à chaque `pytest`), volontairement séparé pour ne pas mélanger "tests
 gratuits rapides" et "évaluation qui coûte et prend du temps".
 
@@ -228,7 +240,7 @@ curl http://localhost:8000/docs
 
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "Quels concerts à Metz ce week-end ?"}'
+  -d '{"question": "Quels concerts à Strasbourg en octobre 2026 ?"}'
 
 curl -X POST http://localhost:8000/rebuild -H "X-Rebuild-Token: votre_jeton"
 ```

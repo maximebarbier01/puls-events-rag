@@ -35,7 +35,7 @@ def raw_events_file(tmp_path):
                 "accessibility_label_fr": None,
                 "daterange_fr": "Samedi 20 septembre",
                 "firstdate_begin": pd.Timestamp.now(tz="UTC"),
-                "lastdate_end": pd.Timestamp.now(tz="UTC"),
+                "lastdate_end": pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=30),
                 "location_name": "Centre Pompidou-Metz",
                 "location_city": "Metz",
                 "location_lat": 49.11,
@@ -161,7 +161,7 @@ def test_metadata_reflects_current_index_size(client):
     assert body["nb_chunks_indexed"] == 1  # l'unique événement de la fixture "client"
     assert body["embedding_model"]
     assert body["llm_model"]
-    assert body["default_top_k"] == 5
+    assert body["default_top_k"] == 10
 
 
 def test_metadata_reads_the_live_vectorstore_not_a_stale_value(client, monkeypatch):

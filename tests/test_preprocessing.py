@@ -6,11 +6,12 @@ import pandas as pd
 import pytest
 
 from app.data.preprocessing import (
+    EXCLUDED_ORIGINAGENDA_PREFIXES,
     EXCLUDED_ORIGINAGENDA_TITLES,
     build_content_text,
     clean_html,
     filter_cultural_events,
-    filter_recent_events,
+    filter_upcoming_events,
     filter_valid_status,
     preprocess,
     select_output_columns,
@@ -145,8 +146,15 @@ def sample_events() -> pd.DataFrame:
     )
 
 
-def test_filter_recent_events_keeps_one_year_history_and_all_future(sample_events):
-    result = filter_recent_events(sample_events, REFERENCE_DATE)
+def test_filter_upcoming_events_keeps_only_events_not_yet_ended(sample_events):
+    # Par défaut (HISTORY_DAYS = 0) : les événements déjà terminés (uid 2 et 3) sortent,
+    # tous les événements à venir restent, même très lointains (uid 6, dans 400 jours).
+    result = filter_upcoming_events(sample_events, REFERENCE_DATE)
+    assert set(result["uid"]) == {"1", "4", "5", "6"}
+
+
+def test_filter_upcoming_events_can_keep_a_history_window(sample_events):
+    result = filter_upcoming_events(sample_events, REFERENCE_DATE, days=365)
     assert set(result["uid"]) == {"1", "2", "4", "5", "6"}
 
 
@@ -160,6 +168,36 @@ def test_filter_cultural_events_excludes_known_non_cultural_sources(sample_event
     result = filter_cultural_events(sample_events)
     assert "5" not in set(result["uid"])
     assert not set(result["originagenda_title"]) & EXCLUDED_ORIGINAGENDA_TITLES
+
+
+def test_filter_cultural_events_excludes_accommodation_catalog_by_prefix(sample_events):
+    catalog = sample_events.iloc[[0]].copy()
+    catalog["uid"] = "catalogue-1"
+    # Titre réel des données, avec l'apostrophe typographique (’) : c'est elle qui avait
+    # fait échouer une première version du filtre, validée sur une apostrophe droite.
+    catalog["originagenda_title"] = (
+        "Catalogue départemental des structures d’accueil et d’hébergement - Vosges"
+    )
+    df = pd.concat([sample_events, catalog], ignore_index=True)
+
+    result = filter_cultural_events(df)
+
+    assert "catalogue-1" not in set(result["uid"])
+    assert "1" in set(result["uid"])
+
+
+def test_filter_upcoming_events_drops_out_of_range_dates_instead_of_crashing(sample_events):
+    # Vu dans les données réelles : une offre d'emploi datée de l'an 2503, hors des bornes
+    # de pandas (~2262) : le nettoyage ne doit pas planter, l'événement est simplement écarté.
+    bad = sample_events.iloc[[0]].copy()
+    bad["uid"] = "annee-2503"
+    bad["lastdate_end"] = "2503-03-26T15:30:00+00:00"
+    df = pd.concat([sample_events.astype({"lastdate_end": object}), bad], ignore_index=True)
+
+    result = filter_upcoming_events(df, REFERENCE_DATE)
+
+    assert "annee-2503" not in set(result["uid"])
+    assert "1" in set(result["uid"])
 
 
 def test_clean_html_strips_tags():
@@ -196,7 +234,21 @@ def test_preprocess_end_to_end(tmp_path, sample_events):
     result = preprocess(raw_path, output_path, reference_date=REFERENCE_DATE)
 
     assert output_path.exists()
-    assert set(result["uid"]) == {"1", "2", "6"}
+    assert set(result["uid"]) == {"1", "6"}
     assert result["content"].str.strip().astype(bool).all()
     assert result["title_fr"].notna().all()
     assert not result["content"].str.contains("<").any()
+
+
+def test_preprocess_decodes_html_entities_in_titles(tmp_path, sample_events):
+    """Open Agenda livre parfois des titres avec des entités non décodées (« Jér&#244;me »)."""
+    sample_events.loc[sample_events["uid"] == "1", "title_fr"] = "Rencontre avec Jér&#244;me Clément &amp; L&rsquo;équipe"
+    raw_path = tmp_path / "raw.parquet"
+    sample_events.to_parquet(raw_path)
+
+    result = preprocess(raw_path, tmp_path / "processed.parquet", reference_date=REFERENCE_DATE)
+
+    title = result.loc[result["uid"] == "1", "title_fr"].iloc[0]
+    assert title == "Rencontre avec Jérôme Clément & L’équipe"
+    content = result.loc[result["uid"] == "1", "content"].iloc[0]
+    assert "&#244;" not in content and "&rsquo;" not in content

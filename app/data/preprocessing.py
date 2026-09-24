@@ -5,6 +5,7 @@ avant leur découpage en blocs et leur indexation.
 
 from __future__ import annotations
 
+import html
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,11 +14,15 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 
-RECENCY_WINDOW_DAYS = 365
+# Nombre de jours d'historique conservés en plus des événements à venir.
+# 0 = seulement les événements pas encore terminés : le besoin métier est de recommander
+# des événements à venir, et mesure faite le 24/09/2026, avec un an d'historique 94 % du
+# corpus indexé était déjà terminé (voir docs/rapport_technique.md).
+HISTORY_DAYS = 0
 CANCELED_STATUS_ID = 6
 FULL_STATUS_ID = 5
 
-# Sources identifiées dans l'exportation « Moselle » qui ne concernent pas des événements culturels :
+# Sources identifiées dans les données Open Agenda qui ne concernent pas des événements culturels :
 # France Travail, salons de recrutement, chambres d'agriculture,
 # économie numérique, pour les PME, etc.
 # Puls-Events étant une plateforme dédiée aux événements culturels,
@@ -36,7 +41,25 @@ EXCLUDED_ORIGINAGENDA_TITLES = {
     "Ensemble, dialoguons - Édition 2026 | Banque de France",
     "Mécénat en Grand Est",
     "Semaine des métiers du tourisme 2026",
+    # Ajouts pour la région Grand Est : emploi, santé/sport, parentalité, industrie,
+    # économie, apiculture commerciale, spéléologie.
+    "Mes événements Pôle Emploi",
+    "La Semaine de la Forme 2026",
+    "Semaine de l'industrie 2026",
+    "1000 premiers jours à CMZ",
+    "Bien grandir dans le Saulnois",
+    "France-Belgique - Calendrier des évènements économiques et sectoriels",
+    "Api'Week 2026",
+    "Journées Nationales de la Spéléologie et du Canyonisme.",
+    "Chambre d'Agriculture des Vosges",
 }
+
+# Agendas dont le titre commence par ces préfixes : ce ne sont pas des événements mais des
+# fiches d'hébergement (« Catalogue départemental des structures d'accueil et
+# d'hébergement - <département> »), avec une date fictive au 1er janvier 2032.
+# Le préfixe s'arrête avant « d’accueil » : dans les données l'apostrophe est typographique (’),
+# pas droite ('), et une comparaison sur la chaîne complète ne matcherait rien.
+EXCLUDED_ORIGINAGENDA_PREFIXES = ("Catalogue départemental des structures",)
 
 OUTPUT_COLUMNS = [
     "uid",
@@ -59,15 +82,18 @@ def load_raw_events(path: Path) -> pd.DataFrame:
     return pd.read_parquet(path)
 
 
-def filter_recent_events(
-    df: pd.DataFrame, reference_date: datetime, days: int = RECENCY_WINDOW_DAYS
+def filter_upcoming_events(
+    df: pd.DataFrame, reference_date: datetime, days: int = HISTORY_DAYS
 ) -> pd.DataFrame:
-    """Conserve les événements remontants jusqu'à `days`, ainsi que tous les événements à venir (sans limite).."""
+    """Conserve les événements pas encore terminés à `reference_date` (en cours ou à
+    venir, sans limite dans le futur), plus ceux terminés depuis au plus `days` jours."""
     cutoff = pd.Timestamp(reference_date - timedelta(days=days))
     cutoff = (
         cutoff.tz_localize("UTC") if cutoff.tzinfo is None else cutoff.tz_convert("UTC")
     )
-    lastdate_end = pd.to_datetime(df["lastdate_end"], utc=True)
+    # errors="coerce" : une date hors bornes (ex. l'an 2503 vu dans les données) devient NaT
+    # au lieu de faire planter le nettoyage, et l'événement est écarté (NaT >= cutoff est faux).
+    lastdate_end = pd.to_datetime(df["lastdate_end"], utc=True, errors="coerce")
     return df[lastdate_end >= cutoff].copy()
 
 
@@ -85,7 +111,11 @@ def filter_valid_status(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def filter_cultural_events(df: pd.DataFrame) -> pd.DataFrame:
-    return df[~df["originagenda_title"].isin(EXCLUDED_ORIGINAGENDA_TITLES)].copy()
+    titles = df["originagenda_title"]
+    excluded = titles.isin(EXCLUDED_ORIGINAGENDA_TITLES) | titles.fillna("").str.startswith(
+        EXCLUDED_ORIGINAGENDA_PREFIXES
+    )
+    return df[~excluded].copy()
 
 
 def clean_html(text) -> str:
@@ -163,7 +193,11 @@ def preprocess(
     df = load_raw_events(raw_path)
     df = filter_valid_status(df)
     df = filter_cultural_events(df)
-    df = filter_recent_events(df, reference_date)
+    df = filter_upcoming_events(df, reference_date)
+
+    # Certains titres arrivent avec des entités HTML non décodées (« Jér&#244;me », « L&rsquo;humour ») :
+    # les descriptions sont déjà décodées par BeautifulSoup (clean_html), pas les titres.
+    df["title_fr"] = df["title_fr"].map(lambda t: html.unescape(t) if isinstance(t, str) else t)
 
     df["is_full"] = df["status"].apply(lambda s: _status_id(s) == FULL_STATUS_ID)
     df["content"] = df.apply(build_content_text, axis=1)

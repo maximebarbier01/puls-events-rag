@@ -4,7 +4,7 @@ import pytest
 from langchain_core.documents import Document
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-from app.rag.chain import SYSTEM_PROMPT, answer_question, format_docs
+from app.rag.chain import SYSTEM_PROMPT, answer_question, detect_city, format_docs, retrieve
 from app.vectorstore.build import build_index, to_documents
 
 
@@ -57,7 +57,7 @@ def test_answer_question_returns_llm_answer_and_retrieved_sources(sample_df, fak
     vectorstore = build_index(documents, fake_embeddings)
     llm = FakeListChatModel(responses=["Il y a un concert de jazz samedi à Metz."])
 
-    result = answer_question(vectorstore, llm, "Un concert à Metz ?", k=2)
+    result = answer_question(vectorstore, llm, "Un concert ce week-end ?", k=2)
 
     assert result.answer == "Il y a un concert de jazz samedi à Metz."
     assert len(result.sources) == 2
@@ -99,3 +99,74 @@ def test_answer_question_does_not_crash_on_unrelated_query(sample_df, fake_embed
 
     assert result.answer
     assert len(result.sources) == 2
+
+
+CITIES = ["Metz", "Saint-Dizier", "Dizier", "Épinal", "Bar-le-Duc"]
+
+
+def test_detect_city_finds_the_city_ignoring_case_and_accents():
+    assert detect_city("Quels concerts à metz ?", CITIES) == "Metz"
+    assert detect_city("Des spectacles à Epinal en octobre", CITIES) == "Épinal"
+
+
+def test_detect_city_prefers_the_longest_name():
+    assert detect_city("Que faire à Saint-Dizier ?", CITIES) == "Saint-Dizier"
+
+
+def test_detect_city_matches_whole_words_only():
+    assert detect_city("Une exposition metzquelque chose", CITIES) is None
+
+
+def test_detect_city_returns_none_without_a_known_city():
+    assert detect_city("Quelle est la recette du brownie ?", CITIES) is None
+    assert detect_city("Quels concerts à Paris ?", CITIES) is None
+
+
+def test_retrieve_restricts_results_to_the_city_in_the_question(fake_embeddings):
+    df = pd.DataFrame(
+        [
+            {"uid": str(i), "content": f"Concert numéro {i}", "title_fr": f"Concert {i}", "location_city": city}
+            for i, city in enumerate(["Metz", "Colmar", "Colmar", "Nancy"])
+        ]
+    )
+    vectorstore = build_index(to_documents(df), fake_embeddings)
+
+    results = retrieve(vectorstore, "Quels concerts à Colmar ?", k=3)
+
+    assert len(results) == 2
+    assert {doc.metadata["location_city"] for doc in results} == {"Colmar"}
+
+
+def test_retrieve_without_city_searches_the_whole_index(fake_embeddings):
+    df = pd.DataFrame(
+        [
+            {"uid": str(i), "content": f"Concert numéro {i}", "title_fr": f"Concert {i}", "location_city": city}
+            for i, city in enumerate(["Metz", "Colmar", "Nancy"])
+        ]
+    )
+    vectorstore = build_index(to_documents(df), fake_embeddings)
+
+    results = retrieve(vectorstore, "Quels concerts ce week-end ?", k=3)
+
+    assert len(results) == 3
+
+
+def test_detect_city_does_not_read_the_grand_est_region_as_the_town_of_grand():
+    assert detect_city("Quels concerts dans le Grand Est en octobre ?", ["Grand", "Metz"]) is None
+    assert detect_city("Des concerts dans le grand-est ?", ["Grand"]) is None
+    assert detect_city("Que faire à Grand ce week-end ?", ["Grand"]) == "Grand"
+
+
+def test_retrieve_treats_case_variants_of_a_city_as_the_same_city(fake_embeddings):
+    """Open Agenda contient « Strasbourg » et « STRASBOURG » : les deux doivent remonter."""
+    df = pd.DataFrame(
+        [
+            {"uid": str(i), "content": f"Concert numéro {i}", "title_fr": f"Concert {i}", "location_city": city}
+            for i, city in enumerate(["Strasbourg", "STRASBOURG", "Nancy"])
+        ]
+    )
+    vectorstore = build_index(to_documents(df), fake_embeddings)
+
+    results = retrieve(vectorstore, "Quels concerts à Strasbourg ?", k=5)
+
+    assert {doc.metadata["location_city"] for doc in results} == {"Strasbourg", "STRASBOURG"}
