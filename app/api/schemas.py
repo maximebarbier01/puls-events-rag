@@ -17,7 +17,7 @@ class AskRequest(BaseModel):
         ...,
         min_length=1,
         description="Question posée par l'utilisateur, en français.",
-        examples=["Quels concerts de musique à Metz samedi 3 octobre 2026 ?"],
+        examples=["Quels concerts de musique à Strasbourg samedi 3 octobre 2026 ?"],
     )
 
     @field_validator("question")
@@ -65,7 +65,9 @@ class HealthResponse(BaseModel):
     """Réponse renvoyée par GET /health."""
 
     status: str = Field(..., description="'ok' si l'API est opérationnelle.")
-    vectorstore_loaded: bool = Field(..., description="L'index FAISS est chargé en mémoire.")
+    vectorstore_loaded: bool = Field(
+        ..., description="L'index FAISS est chargé en mémoire."
+    )
     llm_configured: bool = Field(..., description="Le client Mistral est instancié.")
 
 
@@ -77,7 +79,15 @@ class MetadataResponse(BaseModel):
     /ask, sans avoir à lire le code.
     """
 
-    embedding_model: str = Field(..., description="Modèle utilisé pour vectoriser événements et questions.")
-    llm_model: str = Field(..., description="Modèle Mistral utilisé pour générer les réponses.")
-    nb_chunks_indexed: int = Field(..., description="Nombre de chunks actuellement dans l'index FAISS.")
-    default_top_k: int = Field(..., description="Nombre de documents récupérés par défaut à chaque question.")
+    embedding_model: str = Field(
+        ..., description="Modèle utilisé pour vectoriser événements et questions."
+    )
+    llm_model: str = Field(
+        ..., description="Modèle Mistral utilisé pour générer les réponses."
+    )
+    nb_chunks_indexed: int = Field(
+        ..., description="Nombre de chunks actuellement dans l'index FAISS."
+    )
+    default_top_k: int = Field(
+        ..., description="Nombre de documents récupérés par défaut à chaque question."
+    )

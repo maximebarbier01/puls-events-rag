@@ -342,19 +342,19 @@ fois** au démarrage du serveur (`lifespan`), jamais rechargés à chaque requê
 Requête :
 
 ```json
-{ "question": "Quels concerts de musique à Metz ce week-end ?" }
+{ "question": "Quels concerts de musique à Strasbourg samedi 3 octobre 2026 ?" }
 ```
 
 Réponse :
 
 ```json
 {
-  "answer": "Voici les concerts à Metz ce dimanche 21 juin : ...",
+  "answer": "Voici les concerts à Strasbourg le samedi 3 octobre 2026 : ...",
   "sources": [
     {
-      "title": "Concerts Place de la Comédie - Metz",
-      "dates": "Dimanche 21 juin, 17h00",
-      "city": "Metz",
+      "title": "Concert à Strasbourg : ...",
+      "dates": "Samedi 3 octobre, 20h00",
+      "city": "Strasbourg",
       "url": "https://openagenda.com/fetedelamusique2026/events/..."
     }
   ]
@@ -476,6 +476,17 @@ indulgent.
   comportement est le plus juste pour l'utilisateur (une ville demandée = uniquement cette
   ville). Le prompt système n'est pas modifié (voir section 4 : les enrichissements testés
   avaient dégradé la fidélité) ; le sur-refus du générateur est documenté comme limite principale.
+- **Contrôle sans juge LLM (k=10 avec et sans filtre).** Les scores Ragas de fidélité et de
+  pertinence sont meilleurs sans filtre (0.82 et 0.71), alors nous avons vérifié directement, en
+  cherchant les titres des événements attendus dans les contextes et dans les réponses (une
+  exécution, appariement approximatif sur les 40 premiers caractères du titre) : avec le filtre,
+  10 événements attendus sur 21 sont présents dans les 10 contextes, contre 4 sur 21 sans filtre ;
+  mais les réponses sont identiques (3 événements attendus cités sur 21 dans les deux cas,
+  3 questions sur 11 avec au moins un événement attendu cité, refus corrects 3 sur 3). Le gain de
+  retrieval ne se transforme donc pas encore en meilleures réponses, faute d'un générateur qui
+  l'exploite, et les meilleurs scores sans filtre ne traduisent pas des réponses plus justes : Ragas
+  mesure l'ancrage dans le contexte, pas l'exactitude. Nous conservons le filtre pour son retrieval,
+  en assumant que l'arbitrage n'est pas favorable sur les métriques de réponse.
 - **Générateur plus fort : sans effet.** Pour vérifier que le sur-refus vient bien de la
   taille du modèle, nous avons remplacé `mistral-small-latest` par `mistral-medium-latest` pour
   la seule génération (juge Ragas, données, retrieval et prompt inchangés, 3 exécutions) :
