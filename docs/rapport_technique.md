@@ -452,10 +452,11 @@ trois variantes du retrieval, sans toucher au prompt :
 | k=10, sans filtre | **0.82** (0.76–0.87) | **0.71** (0.66–0.73) | 0.29 (0.27–0.31) | 0.45 (0.38–0.52) |
 | **k=10 + filtre ville (retenue)** | 0.51 (0.44–0.64) | 0.55 (0.52–0.59) | **0.38** (0.36–0.42) | **0.60** (0.57–0.64) |
 
-(moyenne, puis min–max des 3 exécutions.) Ces scores **ne sont pas comparables** à ceux de la
-première version du rapport (faithfulness 0.92, context precision 0.50) : le corpus, la zone et surtout
-le jeu de test ont changé, et l'ancien jeu, bâti sur les sorties du système, était plus
-indulgent.
+(moyenne, puis min–max des 3 exécutions.) Une évaluation initiale, menée sur un premier corpus
+(Moselle, un an d'historique) avec un jeu de test bâti sur les sorties du système, donnait des scores
+plus élevés (faithfulness 0.92, context precision 0.50) mais peu fiables : ce jeu ne pouvait pas
+révéler les événements que le système ne trouvait pas. Les scores ci-dessus, obtenus avec un jeu
+plus exigeant sur le corpus final, ne sont **pas comparables** à ceux-là.
 
 **Lecture des résultats**
 
@@ -508,8 +509,8 @@ indulgent.
 
 **Limites identifiées** : (1) le classement sémantique de MiniLM **à l'intérieur d'une ville**
 reste imparfait (Strasbourg compte 107 événements) et la période (« en octobre 2026 ») n'est pas
-filtrée ; (2) le générateur refuse trop souvent quand le contexte est bruité. Comme dans la
-première version, `answer_relevancy` tombe aussi mécaniquement à 0 sur certaines réponses de
+filtrée ; (2) le générateur refuse trop souvent quand le contexte est bruité. Comme lors de
+l'évaluation initiale, `answer_relevancy` tombe aussi mécaniquement à 0 sur certaines réponses de
 refus justifiées : c'est une limite de la métrique, pas du système.
 
 ---
